@@ -20,12 +20,16 @@ def findRec(node, element, result):
     return result
 
 
-def downloadRTSP(url, name, camera):
-    if exists(name, camera) is True:
-        return
+def downloadRTSP(url, name="", camera=""):
+    if(name != None and camera != None):
+        if exists(name, camera) is True:
+            return
+    else:
+        name = url
+        camera = ""
     print("Trying to download from: " + url)
-    stream = ffmpeg.output(ffmpeg.input(url), camera +
-                           "_" + name + ".mp4", reorder_queue_size="0", timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
+    stream = ffmpeg.output(ffmpeg.input(url), camera + name + ".mp4", reorder_queue_size="0",
+                           timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
     ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
@@ -37,7 +41,7 @@ def folder():
 
 
 def exists(name, camera):
-    f = camera + "_" + name + ".mp4"
+    f = camera + name + ".mp4"
     if os.path.isfile(f):
         size = isGoodSize(name, camera)
         if size:
@@ -48,7 +52,7 @@ def exists(name, camera):
 
 
 def isGoodSize(name, camera):
-    f = camera + "_" + name + ".mp4"
+    f = camera + name + ".mp4"
     if os.stat(f).st_size < 1000:
         os.remove(f)
         return False
