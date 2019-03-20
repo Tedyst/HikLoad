@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  hikload:
+    build:
+      context: ./
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
