@@ -21,6 +21,9 @@ def findRec(node, element, result):
 
 
 def downloadRTSP(url, name="", camera=""):
+    """Downloads an RTSP livestream to a specific location.
+    name, camera are optional
+    """
     if(name != None and camera != None):
         if exists(name, camera) is True:
             return
@@ -33,33 +36,23 @@ def downloadRTSP(url, name="", camera=""):
     ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
-def chdir():
-    newpath = getConfig("downloadPath")
+def chdir(newpath):
+    """Changes current directory to downloadPath"""
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     os.chdir(newpath)
 
 
 def exists(name, camera):
+    """Returns true if file already exists"""
     f = camera + name + ".mp4"
     if os.path.isfile(f):
-        size = isGoodSize(name, camera)
-        if size:
-            return True
-        return False
-    else:
-        return False
-
-
-def isGoodSize(name, camera):
-    f = camera + name + ".mp4"
-    if os.stat(f).st_size < 1000:
-        os.remove(f)
-        return False
-    return True
+        return True
+    return False
 
 
 def getList(response):
+    """Returns a list of [url, name, camera] from a response"""
     obj = xmltodict.parse(getXmlString(response))
     ret = []
     try:

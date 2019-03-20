@@ -30,7 +30,7 @@ def main():
     serverpath = "http://" + getConfig('user') + ":" + getConfig(
         "password") + "@" + getConfig("server") + "/ISAPI/ContentMgmt/search"
 
-    chdir()
+    chdir(getConfig("downloadPath"))
     starttime = datetime.datetime.now().replace(
         hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
     endtime = datetime.datetime.now().replace(
