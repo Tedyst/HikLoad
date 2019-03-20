@@ -13,6 +13,8 @@ import os
 
 def getConfig(text):
     try:
+        if text is "cameras":
+            return os.environ["cameras"].split(' ')
         if os.environ[text]:
             return os.environ[text]
     except:
