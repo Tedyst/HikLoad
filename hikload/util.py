@@ -4,7 +4,7 @@ from xml.etree import ElementTree
 import subprocess
 import xmltodict
 import ffmpeg
-from config import getConfig
+from hikload.config import getConfig
 
 
 def getXmlString(elem):
@@ -33,7 +33,7 @@ def downloadRTSP(url, name="", camera=""):
     print("Trying to download from: " + url)
     stream = ffmpeg.output(ffmpeg.input(url), camera + name + ".mp4", reorder_queue_size="0",
                            timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
-    ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
+    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
 def chdir(newpath):

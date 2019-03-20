@@ -1,7 +1,7 @@
 from xml.etree import ElementTree
 import requests
-from util import chdir, getList, getXmlString, downloadRTSP
-from config import getConfig
+from hikload.util import chdir, getList, getXmlString, downloadRTSP
+from hikload.config import getConfig
 import datetime
 
 
