@@ -40,7 +40,7 @@ CONFIG = {
 ## Using your own script
 
 ```python
-from util import getList, downloadRTSP
+from hikload.util import getList, downloadRTSP
 
 list = getList(ElementTree)
 for i in list:
