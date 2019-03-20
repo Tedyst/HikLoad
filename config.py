@@ -5,7 +5,7 @@ CONFIG = {
         "201"
     ],
     "user": "admin",
-    "password": "cosica123",
+    "password": "",
     "downloadPath": "./Downloads/"
 }
 import os
