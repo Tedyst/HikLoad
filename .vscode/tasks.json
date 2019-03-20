@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "python3",
             "args": [
-                "main.py"
+                "src/main.py"
             ],
             "presentation": {
                 "echo": false,
