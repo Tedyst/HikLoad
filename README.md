@@ -26,9 +26,9 @@ CONFIG = {
 If you are using docker, you could use the environment variables:
 
 ```docker
-ENV server = "192.168.1.69"
-ENV cameras = "101 201"
-ENV user = "admin"
+ENV server "192.168.1.69"
+ENV cameras "101 201"
+ENV user "admin"
 ```
 
 ## Using your own script

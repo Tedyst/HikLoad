@@ -5,5 +5,3 @@ services:
     build:
       context: ./
     restart: always
-    environment:
-      - PYTHONUNBUFFERED=1
