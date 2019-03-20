@@ -4,7 +4,7 @@ A short Python script that downloads video recordings from the day that this scr
 
 ## Using with docker
 
-```bash
+```sh
 docker pull tedyst/hikload:latest
 ```
 
