@@ -3,54 +3,30 @@ import xml.dom.minidom as minidom
 from xml.etree import ElementTree
 import subprocess
 import xmltodict
+import ffmpeg
+from config import getConfig
 
 
 def getXmlString(elem):
-    """Return a pretty-printed XML string for the Element.
-    """
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="\t")
 
 
 def findRec(node, element, result):
-    print(node)
     for item in node.getChildren():
         result.append(item)
         findRec(item, element, result)
     return result
 
 
-def initVlc():
-    subprocess.call([
-        "killall",
-        "-9",
-        "vlc"
-    ])
-    # I'm sorry
-
-
-def download(url, name, camera):
-    print("Trying to download from: " + url)
-    name = exists(name, camera)
-    if name is None:
+def downloadRTSP(url, name, camera):
+    if exists(name, camera) is True:
         return
-    subprocess.call([
-        "vlc",
-        url,
-        "-I dummy",
-        "--sout",
-        '#transcode{vcodec=mp4v,vb=10240,acodec=mp4a,ab=128}:standard{mux=mp4,dst="' +
-        name + '\",access=file}"',
-        "--rtsp-tcp",
-        "--rtsp-frame-buffer-size",
-        "100000000",
-        "--sout-mux-caching",
-        "500000",
-        "--network-caching",
-        "100000",
-        'vlc://quit'
-    ])
+    print("Trying to download from: " + url)
+    stream = ffmpeg.output(ffmpeg.input(url), camera +
+                           "_" + name + ".mp4", reorder_queue_size="0", timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
+    ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
 def folder():
@@ -63,18 +39,32 @@ def folder():
 def exists(name, camera):
     f = camera + "_" + name + ".mp4"
     if os.path.isfile(f):
-        return None
+        size = isGoodSize(name, camera)
+        if size:
+            return True
+        return False
     else:
-        return f
+        return False
+
+
+def isGoodSize(name, camera):
+    f = camera + "_" + name + ".mp4"
+    if os.stat(f).st_size < 1000:
+        os.remove(f)
+        return False
+    return True
 
 
 def getList(response):
     obj = xmltodict.parse(getXmlString(response))
+    ret = []
     for i in obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]:
         url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
-            "rtsp://", "rtsp://admin:cosica123@")
+            "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
+                "password") + "@")
         camera = url.split('/')[5]
         arguments = url.split('?')[1]
         name = arguments.split('&')[2]
         name = name.replace("name=", "")
-        download(url, name, camera)
+        ret.append([url, name, camera])
+    return ret

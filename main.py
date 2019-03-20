@@ -1,6 +1,6 @@
 from xml.etree import ElementTree
 import requests
-from util import initVlc, folder, getList, getXmlString
+from util import folder, getList, getXmlString, downloadRTSP
 from config import getConfig
 import datetime
 
@@ -26,9 +26,9 @@ search = ElementTree.fromstring("""<?xml version="1.0" encoding="utf-8"?>
 headers = {'Content-Type': 'application/xml'}
 
 
-serverpath = getConfig("server") + "ContentMgmt/search"
+serverpath = "http://" + getConfig('user') + ":" + getConfig(
+    "password") + "@" + getConfig("server") + "/ISAPI/ContentMgmt/search"
 
-initVlc()
 folder()
 starttime = datetime.datetime.now().replace(
     hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
@@ -36,12 +36,13 @@ endtime = datetime.datetime.now().replace(
     hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
 for i in getConfig("cameras"):
-    print(i)
+    print("Trying to download from camera " + i)
     search[1][0].text = i
     search[2][0][0].text = starttime
     search[2][0][1].text = endtime
     data = getXmlString(search)
     responseXML = requests.post(serverpath, data, headers).text
     response = ElementTree.fromstring(responseXML)
-    print(response)
-    getList(response)
+    l = getList(response)
+    for i in l:
+        downloadRTSP(i[0], i[1], i[2])

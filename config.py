@@ -1,10 +1,12 @@
 CONFIG = {
-    "server": "",
+    "server": "192.168.1.69",
     "cameras": [
         "101",
-        "201",
-        "301"
-    ]
+        "201"
+    ],
+    "user": "admin",
+    "password": "cosica123",
+    "downloadPath": "./Downloads/"
 }
 import os
 

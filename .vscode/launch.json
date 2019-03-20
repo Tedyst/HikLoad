@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "GDB Linux",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "cwd": "${fileDirname}"
+        }
+    ]
+}
