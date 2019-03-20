@@ -25,7 +25,6 @@ search = ElementTree.fromstring("""<?xml version="1.0" encoding="utf-8"?>
 
 headers = {'Content-Type': 'application/xml'}
 
-
 serverpath = "http://" + getConfig('user') + ":" + getConfig(
     "password") + "@" + getConfig("server") + "/ISAPI/ContentMgmt/search"
 

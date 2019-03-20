@@ -30,7 +30,7 @@ def downloadRTSP(url, name, camera):
 
 
 def folder():
-    newpath = r'./Downloads/'
+    newpath = getConfig("downloadPath")
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     os.chdir(newpath)
