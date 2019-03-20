@@ -30,3 +30,13 @@ ENV server = "192.168.1.69"
 ENV cameras = "101 201"
 ENV user = "admin"
 ```
+
+## Using your own script
+
+```python
+from util import getList, downloadRTSP
+
+list = getList(ElementTree)
+for i in list:
+    downloadRTSP(i[0],i[1],i[2])
+```
