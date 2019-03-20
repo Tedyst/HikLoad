@@ -33,7 +33,7 @@ def downloadRTSP(url, name="", camera=""):
     ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
-def folder():
+def chdir():
     newpath = getConfig("downloadPath")
     if not os.path.exists(newpath):
         os.makedirs(newpath)
