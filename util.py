@@ -62,13 +62,17 @@ def isGoodSize(name, camera):
 def getList(response):
     obj = xmltodict.parse(getXmlString(response))
     ret = []
-    for i in obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]:
-        url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
-            "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
-                "password") + "@")
-        camera = url.split('/')[5]
-        arguments = url.split('?')[1]
-        name = arguments.split('&')[2]
-        name = name.replace("name=", "")
-        ret.append([url, name, camera])
+    try:
+        for i in obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]:
+            url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
+                "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
+                    "password") + "@")
+            camera = url.split('/')[5]
+            arguments = url.split('?')[1]
+            name = arguments.split('&')[2]
+            name = name.replace("name=", "")
+            ret.append([url, name, camera])
+    except:
+        print("Could not get a list of videos from the server.")
+        print("Maybe the server is down?")
     return ret
