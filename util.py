@@ -74,5 +74,5 @@ def getList(response):
             ret.append([url, name, camera])
     except:
         print("Could not get a list of videos from the server.")
-        print("Maybe the server is down?")
+        print("Maybe the server is down or maybe the user/password is incorrect?")
     return ret
