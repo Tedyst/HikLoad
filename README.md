@@ -2,9 +2,23 @@
 
 A short Python script that downloads video recordings from the day that this script is run from a Hikvision DVR.
 
+## Using with docker
+
+```bash
+docker pull tedyst/hikload:latest
+```
+
+If you are using docker, you could use the environment variables:
+
+```docker
+ENV server "192.168.1.69"
+ENV cameras "101 201"
+ENV user "admin"
+```
+
 ## Modifying the config
 
-If you are using the script without Docker, you can modify ./config.py as follows:
+You can modify ./config.py as follows:
 
 ```python
 CONFIG = {
@@ -21,14 +35,6 @@ CONFIG = {
     "password": "",
     "downloadPath": "./Downloads/"
 }
-```
-
-If you are using docker, you could use the environment variables:
-
-```docker
-ENV server "192.168.1.69"
-ENV cameras "101 201"
-ENV user "admin"
 ```
 
 ## Using your own script
