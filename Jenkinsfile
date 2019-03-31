@@ -1,4 +1,8 @@
 pipeline {
+    environment{
+        imageName = 'tedyst/hikload'
+        registryCredential = 'docker'
+    }
     agent any
     stages {
         stage('Clone repository') {
@@ -7,44 +11,32 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    app = docker.build("tedyst/hikload")
-                }
-            }
-        }
-
         stage('Unit Testing') {
             steps {
                 script {
-                    app.inside {
-                        sh '''
-                            pip3 install virtualenv
-                            PYENV_HOME=$WORKSPACE/.pyenv/
-                            virtualenv --no-site-packages $PYENV_HOME
-                            source $PYENV_HOME/bin/activate
-                            pip install -U pytest
-                            pip install -r requirements.txt
-                            pytest --junitxml=text.xml
-                            deactivate
-                        '''
-                    }
+                    sh '''
+                        pip3 install -r requirements.txt
+                        pytest --junitxml=text.xml
+                    '''
                 }
             }
         }
-
-        stage('Push image') {
+        
+        stage('Build and Push to Docker') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker') {
-                        app.push("latest")
+                    if (env.BRANCH_NAME == 'master') {
+                        script {
+                            image = docker.build(imageName)
+                            docker.withRegistry('', registryCredential) {
+                                image.push("latest")
+                            }
+                        }
                     }
                 }
             }
-        }
+        }   
     }
-
     post {
         always {
             junit 'text.xml'
