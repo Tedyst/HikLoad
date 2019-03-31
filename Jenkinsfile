@@ -16,7 +16,7 @@ pipeline {
                 script {
                     sh '''
                         pip3 install -r requirements.txt
-                        pytest --junitxml=text.xml
+                        pytest --junitxml=tests.xml
                     '''
                 }
             }
@@ -39,7 +39,7 @@ pipeline {
     }
     post {
         always {
-            junit 'text.xml'
+            junit 'tests.xml'
         }
     }
 }
