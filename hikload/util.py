@@ -10,7 +10,6 @@ from .config import CONFIG
 class ResponseObject(object):
     def __init__(self):
         self.camera = ""
-        self.arguments = ""
         self.name = ""
     pass
 
@@ -71,19 +70,25 @@ def exists(name, camera):
 
 
 def getList(response):
-    """Returns a list of [url, name, camera] from a response"""
+    """Returns a list of ResponseObject from a response"""
     obj = xmltodict.parse(getXmlString(response))
     ret = []
     try:
+        response = ResponseObject()
+
+        # Good luck trying to fix this if this ever breaks
         for i in obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]:
+            # This adds the user/password after rtsp://
             url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
                 "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
-                    "password") + "@")
-            response = ResponseObject()
+                    "password") + "@", 1)
+
+            # This gets the camera ID
             response.camera = url.split('/')[5]
-            response.arguments = url.split('?')[1]
-            response.name = response.arguments.split('&')[2]
-            response.name = response.name.replace("name=", "")
+            # This gets the "name" argument from the url
+            arguments = url.split('?')[1]
+            response.name = arguments.split('&')[2].replace("name=", "")
+
             ret.append(response)
     except:
         print("Could not get a list of videos from the server.")
