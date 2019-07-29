@@ -7,6 +7,14 @@ import ffmpeg
 from hikload.config import getConfig
 
 
+class ResponseObject(object):
+    def __init__(self):
+        self.camera = ""
+        self.arguments = ""
+        self.name = ""
+    pass
+
+
 def getXmlString(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
@@ -20,18 +28,18 @@ def findRec(node, element, result):
     return result
 
 
-def downloadRTSP(url, name="", camera=""):
+def downloadRTSP(response):
     """Downloads an RTSP livestream to a specific location.
     name, camera are optional
     """
-    if(name != None and camera != None):
-        if exists(name, camera) is True:
+    if(response.name != None and response.camera != None):
+        if exists(response.name, response.camera) is True:
             return
     else:
-        name = url
-        camera = ""
-    print("Trying to download from: " + url)
-    stream = ffmpeg.output(ffmpeg.input(url), camera + name + ".mp4", reorder_queue_size="0",
+        response.name = response.url
+        response.camera = ""
+    print("Trying to download from: " + response.url)
+    stream = ffmpeg.output(ffmpeg.input(response.url), response.camera + response.name + ".mp4", reorder_queue_size="0",
                            timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
@@ -60,11 +68,12 @@ def getList(response):
             url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
                 "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
                     "password") + "@")
-            camera = url.split('/')[5]
-            arguments = url.split('?')[1]
-            name = arguments.split('&')[2]
-            name = name.replace("name=", "")
-            ret.append([url, name, camera])
+            response = ResponseObject()
+            response.camera = url.split('/')[5]
+            response.arguments = url.split('?')[1]
+            response.name = response.arguments.split('&')[2]
+            response.name = response.name.replace("name=", "")
+            ret.append(response)
     except:
         print("Could not get a list of videos from the server.")
         print("Maybe the server is down or maybe the user/password is incorrect?")

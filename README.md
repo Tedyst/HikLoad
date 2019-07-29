@@ -42,7 +42,6 @@ CONFIG = {
 ```python
 from hikload.util import getList, downloadRTSP
 
-list = getList(ElementTree)
-for i in list:
-    downloadRTSP(i[0],i[1],i[2])
+for stream in getList(ElementTree):
+    downloadRTSP(stream)
 ```

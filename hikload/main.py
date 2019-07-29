@@ -44,9 +44,8 @@ def main():
         data = getXmlString(search)
         responseXML = requests.post(serverpath, data, headers).text
         response = ElementTree.fromstring(responseXML)
-        l = getList(response)
-        for i in l:
-            downloadRTSP(i[0], i[1], i[2])
+        for stream in getList(response):
+            downloadRTSP(stream)
 
 
 if __name__ == "__main__":
