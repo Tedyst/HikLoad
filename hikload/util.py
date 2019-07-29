@@ -4,7 +4,7 @@ from xml.etree import ElementTree
 import subprocess
 import xmltodict
 import ffmpeg
-from hikload.config import getConfig
+from .config import CONFIG
 
 
 class ResponseObject(object):
@@ -13,6 +13,17 @@ class ResponseObject(object):
         self.arguments = ""
         self.name = ""
     pass
+
+
+def getConfig(text):
+    try:
+        if text is "cameras":
+            return os.environ["cameras"].split(' ')
+        if os.environ[text]:
+            return os.environ[text]
+    except:
+        pass
+    return CONFIG[text]
 
 
 def getXmlString(elem):

@@ -6,6 +6,7 @@ import datetime
 
 
 def main():
+    # This is needed because Hikvision only uses XML
     search = ElementTree.fromstring("""<?xml version="1.0" encoding="utf-8"?>
     <CMSearchDescription>
         <searchID>C85AB0C7-F380-0001-E33B-A030EEB671F0</searchID>
@@ -31,11 +32,13 @@ def main():
         "password") + "@" + getConfig("server") + "/ISAPI/ContentMgmt/search"
 
     chdir(getConfig("downloadPath"))
+    # TODO: Specify time in config file
     starttime = datetime.datetime.now().replace(
         hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
     endtime = datetime.datetime.now().replace(
         hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
+    # This downloads the files from every camera
     for i in getConfig("cameras"):
         print("Trying to download from camera " + i)
         search[1][0].text = i
