@@ -1,7 +1,6 @@
 import os
 import xml.dom.minidom as minidom
 from xml.etree import ElementTree
-import subprocess
 import xmltodict
 import ffmpeg
 from .config import CONFIG
@@ -16,11 +15,11 @@ class ResponseObject(object):
 
 def getConfig(text):
     try:
-        if text is "cameras":
+        if text == "cameras":
             return os.environ["cameras"].split(' ')
         if os.environ[text]:
             return os.environ[text]
-    except:
+    except Exception:
         pass
     return CONFIG[text]
 
@@ -42,15 +41,18 @@ def downloadRTSP(response):
     """Downloads an RTSP livestream to a specific location.
     name, camera are optional
     """
-    if(response.name != None and response.camera != None):
+    if(response.name is not None and response.camera is not None):
         if exists(response.name, response.camera) is True:
             return
     else:
         response.name = response.url
         response.camera = ""
     print("Trying to download from: " + response.url)
-    stream = ffmpeg.output(ffmpeg.input(response.url), response.camera + response.name + ".mp4", reorder_queue_size="0",
-                           timeout=0, stimeout=100, rtsp_flags="listen", rtsp_transport="tcp")
+    stream = ffmpeg.output(ffmpeg.input(response.url),
+                           response.camera + response.name + ".mp4",
+                           reorder_queue_size="0",
+                           timeout=0, stimeout=100,
+                           rtsp_flags="listen", rtsp_transport="tcp")
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
@@ -77,7 +79,8 @@ def getList(response):
         response = ResponseObject()
 
         # Good luck trying to fix this if this ever breaks
-        for i in obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]:
+        vid = obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]
+        for i in vid:
             # This adds the user/password after rtsp://
             url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
                 "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
@@ -90,7 +93,6 @@ def getList(response):
             response.name = arguments.split('&')[2].replace("name=", "")
 
             ret.append(response)
-    except:
-        print("Could not get a list of videos from the server.")
-        print("Maybe the server is down or maybe the user/password is incorrect?")
+    except Exception:
+        raise
     return ret
