@@ -4,6 +4,7 @@ from xml.etree import ElementTree
 import xmltodict
 import ffmpeg
 from .config import CONFIG
+import re
 
 
 class ResponseObject(object):
@@ -53,7 +54,7 @@ def downloadRTSP(response):
                            reorder_queue_size="0",
                            timeout=0, stimeout=100,
                            rtsp_flags="listen", rtsp_transport="tcp")
-    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
+    return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
 
 
 def chdir(newpath):
@@ -86,6 +87,9 @@ def getList(response):
                 "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
                     "password") + "@", 1)
 
+            # set the url and replace the ip returned by the server by the one configured
+            # in case of ip forwarding
+            response.url = re.sub("\\d+.\\d+.\\d+.\\d+", getConfig("server"), url)
             # This gets the camera ID
             response.camera = url.split('/')[5]
             # This gets the "name" argument from the url
