@@ -54,7 +54,7 @@ def downloadRTSP(response):
                            reorder_queue_size="0",
                            timeout=0, stimeout=100,
                            rtsp_flags="listen", rtsp_transport="tcp")
-    if config.CONFIG["debug"] == True:
+    if CONFIG["debug"] == True:
         return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
