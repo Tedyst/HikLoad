@@ -6,5 +6,6 @@ CONFIG = {
     ],
     "user": "admin",
     "password": "",
-    "downloadPath": "./Downloads/"
+    "downloadPath": "./Downloads/",
+    "debug": False
 }
