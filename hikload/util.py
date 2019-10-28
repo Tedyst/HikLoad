@@ -89,7 +89,7 @@ def getList(response):
 
             # set the url and replace the ip returned by the server by the one configured
             # in case of ip forwarding
-            response.url = re.sub("\\d+.\\d+.\\d+.\\d+", getConfig("server"), url)
+            response.url = re.sub("\\d+\.\\d+\.\\d+\.\\d+", getConfig("server"), url, 1)
             # This gets the camera ID
             response.camera = url.split('/')[5]
             # This gets the "name" argument from the url
