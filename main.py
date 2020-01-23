@@ -1,7 +1,7 @@
 from xml.etree import ElementTree
 import requests
 from hikload.util import chdir, getList, getXmlString, downloadRTSP, getConfig, baseXML
-import datetime
+from datetime import datetime
 
 
 def main():
@@ -14,9 +14,9 @@ def main():
 
     # TODO: Specify time in config file
     # For now we just download the files from today
-    starttime = datetime.datetime.now().replace(
+    starttime = datetime.now().replace(
         hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
-    endtime = datetime.datetime.now().replace(
+    endtime = datetime.now().replace(
         hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
     # This downloads the files from every camera
@@ -34,7 +34,7 @@ def main():
 
         if(getConfig("debug")):
             print(response.text)
-            
+
         response = ElementTree.fromstring(response.text)
 
         for stream in getList(response):
