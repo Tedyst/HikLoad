@@ -3,7 +3,7 @@ import xml.dom.minidom as minidom
 from xml.etree import ElementTree
 import xmltodict
 import ffmpeg
-from .config import CONFIG
+from hikload.config import CONFIG
 import re
 
 
@@ -100,5 +100,26 @@ def getList(response):
 
             ret.append(response)
     except Exception:
-        raise
+        # No videos here, just return an empty array 
+        return []
     return ret
+
+def baseXML():
+    return ElementTree.fromstring("""<?xml version="1.0" encoding="utf-8"?>
+    <CMSearchDescription>
+        <searchID>C85AB0C7-F380-0001-E33B-A030EEB671F0</searchID>
+        <trackList>
+            <trackID></trackID>
+        </trackList>
+        <timeSpanList>
+            <timeSpan>
+                <startTime></startTime>
+                <endTime></endTime>
+            </timeSpan>
+        </timeSpanList>
+        <maxResults>40</maxResults>
+        <searchResultPostion>0</searchResultPostion>
+        <metadataList>
+            <metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor>
+        </metadataList>
+    </CMSearchDescription>""")
