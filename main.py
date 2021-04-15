@@ -36,9 +36,7 @@ def main():
 
         response = ElementTree.fromstring(response.text)
 
-        skipSeconds = 0
-        if int(getConfig("skipFirstSeconds")) != 0:
-            skipSeconds = getConfig("skipFirstSeconds")
+        skipSeconds = int(getConfig("skipFirstSeconds"))
 
         for stream in getList(response):
             if getConfig("skipFrames") == None or getConfig("skipFrames") == 0:
