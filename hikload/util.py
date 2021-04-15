@@ -5,13 +5,12 @@ import xmltodict
 import ffmpeg
 from hikload.config import CONFIG
 import re
+from hikload.classes import *
+import logging
 
 
-class ResponseObject(object):
-    def __init__(self):
-        self.camera = ""
-        self.name = ""
-    pass
+FILE_NAME_FRAMES = "img_{response.camera}_{response.starttime}_%06d.jpg"
+FILE_NAME_NORMAL = "{response.camera}_{response.name}.mp4"
 
 
 def getConfig(text):
@@ -38,25 +37,51 @@ def findRec(node, element, result):
     return result
 
 
-def downloadRTSP(response):
+def downloadRTSP(response: ResponseObject):
     """Downloads an RTSP livestream to a specific location.
     name, camera are optional
     """
-    if(response.name is not None and response.camera is not None):
-        if exists(response.name, response.camera) is True:
-            return
-    else:
-        response.name = response.url
-        response.camera = ""
+    filename = FILE_NAME_NORMAL.format(response=response)
+    if not validResponse(response):
+        raise InvalidResponseException
+    # If the video exists, return
+    if os.path.isfile(filename):
+        return
     print("Trying to download from: " + response.url)
     stream = ffmpeg.output(ffmpeg.input(response.url),
-                           response.camera + response.name + ".mp4",
+                           filename,
                            reorder_queue_size="0",
                            timeout=0, stimeout=100,
-                           rtsp_flags="listen", rtsp_transport="tcp")
-    if CONFIG["debug"] == True:
+                           rtsp_flags="listen",
+                           rtsp_transport="tcp"
+                           )
+    if getConfig("debug"):
         return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
+
+
+def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int):
+    """Downloads an image for every `modulo` frame from a response.
+    """
+    filename = FILE_NAME_FRAMES.format(response=response)
+    if not validResponse(response):
+        raise InvalidResponseException
+    # If the first frame exists, return
+    if os.path.isfile(filename % 1):
+        return
+    logging.info("Trying to download from %s" % response.url)
+    stream = ffmpeg.output(ffmpeg.input(response.url),
+                           filename,
+                           reorder_queue_size=100,
+                           timeout=1, stimeout=1,
+                           rtsp_flags="listen",
+                           rtsp_transport="tcp",
+                           vf="select=not(mod(n\,%s))" % (modulo),
+                           vsync="vfr"
+                           )
+    if getConfig("debug"):
+        return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
+    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=True)
 
 
 def chdir(newpath):
@@ -66,55 +91,51 @@ def chdir(newpath):
     os.chdir(newpath)
 
 
-def exists(name, camera):
-    """Returns true if file already exists"""
-    f = camera + name + ".mp4"
-    if os.path.isfile(f):
-        return True
-    return False
-
-
 def getList(response):
-    """Returns a list of ResponseObject from a response"""
+    """Returns a list of ResponseObject from a response of the DVR/NVR"""
     obj = xmltodict.parse(getXmlString(response))
     ret = []
-    try:
-        response = ResponseObject()
-
-        # Good luck trying to fix this if this ever breaks
-        vid = obj["ns0:CMSearchResult"]["ns0:matchList"]["ns0:searchMatchItem"]
-        for i in vid:
-            # This adds the user/password after rtsp://
-            url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
-                "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
-                    "password") + "@", 1)
-
-            # set the url and replace the ip returned by the server by the one configured
-            # in case of ip forwarding
-            response.url = re.sub("\\d+\.\\d+\.\\d+\.\\d+", getConfig("server"), url, 1)
-            # This gets the camera ID
-            response.camera = url.split('/')[5]
-            # This gets the "name" argument from the url
-            arguments = url.split('?')[1]
-            response.name = arguments.split('&')[2].replace("name=", "")
-
-            ret.append(response)
-    except Exception:
-        # No videos here, just return an empty array 
+    # Good luck trying to fix this if this ever breaks
+    if "ns0:CMSearchResult" not in obj:
+        logging.error("Got the response: %s" % obj)
         return []
+    searchResult = obj["ns0:CMSearchResult"]
+    if searchResult["ns0:numOfMatches"] == "0":
+        logging.info("No videos found for this camera")
+        return []
+    vid = searchResult["ns0:matchList"]["ns0:searchMatchItem"]
+    for i in vid:
+        url = i["ns0:mediaSegmentDescriptor"]["ns0:playbackURI"].replace(
+            "rtsp://", "rtsp://" + getConfig('user') + ":" + getConfig(
+                "password") + "@", 1)
+
+        response = ResponseObject(
+            url.split('/')[5],
+            url.split('?')[1].split('&')[2].replace("name=", ""),
+            url.split("starttime=")[1].split("&")[0],
+            url.split("endtime=")[1].split("&")[0],
+        )
+
+        # set the url and replace the ip returned by the server by the one configured
+        # in case of ip forwarding
+        response.url = re.sub("\\d+\.\\d+\.\\d+\.\\d+",
+                              getConfig("server"), url, 1)
+
+        ret.append(response)
     return ret
 
-def baseXML():
+
+def baseXML(starttime: str, endtime: str, trackid: str) -> ElementTree:
     return ElementTree.fromstring("""<?xml version="1.0" encoding="utf-8"?>
     <CMSearchDescription>
         <searchID>C85AB0C7-F380-0001-E33B-A030EEB671F0</searchID>
         <trackList>
-            <trackID></trackID>
+            <trackID>{trackid}</trackID>
         </trackList>
         <timeSpanList>
             <timeSpan>
-                <startTime></startTime>
-                <endTime></endTime>
+                <startTime>{starttime}</startTime>
+                <endTime>{endtime}</endTime>
             </timeSpan>
         </timeSpanList>
         <maxResults>40</maxResults>
@@ -122,4 +143,14 @@ def baseXML():
         <metadataList>
             <metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor>
         </metadataList>
-    </CMSearchDescription>""")
+    </CMSearchDescription>""".format(starttime=starttime, endtime=endtime, trackid=trackid))
+
+
+def validResponse(response: ResponseObject):
+    if response.url is None:
+        return False
+    if response.camera is None:
+        return False
+    if response.name is None:
+        return False
+    return True

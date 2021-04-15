@@ -1,5 +1,5 @@
 CONFIG = {
-    "server": "192.168.1.239",
+    "server": "192.168.10.239",
     "cameras": [
         "101",
         "201"
@@ -7,5 +7,6 @@ CONFIG = {
     "user": "admin",
     "password": "",
     "downloadPath": "./Downloads/",
-    "debug": True
+    "debug": False,
+    "skipFrames": 0,
 }

@@ -1,16 +1,20 @@
+import logging
 from xml.etree import ElementTree
 import requests
-from hikload.util import chdir, getList, getXmlString, downloadRTSP, getConfig, baseXML
+from requests.api import get
+from hikload.util import chdir, downloadRTSPOnlyFrames, getList, getXmlString, downloadRTSP, getConfig, baseXML
 from datetime import datetime
 
 
 def main():
-    # This is needed because Hikvision only uses XML
-    search = baseXML()
     headers = {'Content-Type': 'application/xml'}
     serverpath = "http://" + getConfig("server") + "/ISAPI/ContentMgmt/search"
 
-    chdir(getConfig("downloadPath"))
+    if getConfig("debug"):
+        logging.basicConfig(level=logging.DEBUG)
+
+    if getConfig("downloadPath"):
+        chdir(getConfig("downloadPath"))
 
     # TODO: Specify time in config file
     # For now we just download the files from today
@@ -21,24 +25,22 @@ def main():
 
     # This downloads the files from every camera
     for i in getConfig("cameras"):
-        print("Trying to download from camera " + i)
+        print("Trying to download from camera %s" % i)
 
-        # This is the <trackID>
-        search[1][0].text = i
-        # These two are the <startTime> and <endTime>
-        search[2][0][0].text = starttime
-        search[2][0][1].text = endtime
+        search = baseXML(starttime, endtime, i)
 
         response = requests.post(serverpath, getXmlString(search), headers,
                                  auth=requests.auth.HTTPBasicAuth(getConfig("user"), getConfig("password")))
 
-        if(getConfig("debug")):
-            print(response.text)
+        logging.debug(response.text)
 
         response = ElementTree.fromstring(response.text)
 
         for stream in getList(response):
-            downloadRTSP(stream)
+            if getConfig("skipFrames") == None or getConfig("skipFrames") == 0:
+                downloadRTSP(stream)
+            else:
+                downloadRTSPOnlyFrames(stream, getConfig("skipFrames"))
 
 
 if __name__ == "__main__":
