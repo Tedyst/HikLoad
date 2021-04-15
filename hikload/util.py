@@ -37,7 +37,7 @@ def findRec(node, element, result):
     return result
 
 
-def downloadRTSP(response: ResponseObject):
+def downloadRTSP(response: ResponseObject, skipSeconds: int = 0):
     """Downloads an RTSP livestream to a specific location.
     name, camera are optional
     """
@@ -48,9 +48,6 @@ def downloadRTSP(response: ResponseObject):
     if os.path.isfile(filename):
         return
     logging.info("Trying to download from the url %s" % response.url)
-    skipSeconds = 0
-    if int(getConfig("skipFirstSeconds")) != 0:
-        skipSeconds = getConfig("skipFirstSeconds")
     stream = ffmpeg.output(ffmpeg.input(response.url),
                            filename,
                            vcodec="copy",
@@ -67,7 +64,7 @@ def downloadRTSP(response: ResponseObject):
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
-def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int):
+def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int, skipSeconds: int = 0):
     """Downloads an image for every `modulo` frame from a response.
     """
     filename = FILE_NAME_FRAMES.format(response=response)
@@ -77,9 +74,6 @@ def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int):
     if os.path.isfile(filename % 1):
         return
     logging.info("Trying to download from %s" % response.url)
-    skipSeconds = 0
-    if int(getConfig("skipFirstSeconds")) != 0:
-        skipSeconds = getConfig("skipFirstSeconds")
     stream = ffmpeg.output(ffmpeg.input(response.url),
                            filename,
                            reorder_queue_size=100,

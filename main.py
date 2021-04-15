@@ -36,11 +36,16 @@ def main():
 
         response = ElementTree.fromstring(response.text)
 
+        skipSeconds = 0
+        if int(getConfig("skipFirstSeconds")) != 0:
+            skipSeconds = getConfig("skipFirstSeconds")
+
         for stream in getList(response):
             if getConfig("skipFrames") == None or getConfig("skipFrames") == 0:
-                downloadRTSP(stream)
+                downloadRTSP(stream, skipSeconds)
             else:
-                downloadRTSPOnlyFrames(stream, getConfig("skipFrames"))
+                downloadRTSPOnlyFrames(
+                    stream, getConfig("skipFrames"), skipSeconds)
 
 
 if __name__ == "__main__":
