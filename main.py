@@ -25,7 +25,7 @@ def main():
 
     # This downloads the files from every camera
     for i in getConfig("cameras"):
-        print("Trying to download from camera %s" % i)
+        logging.info("Trying to download from camera %s" % i)
 
         search = baseXML(starttime, endtime, i)
 

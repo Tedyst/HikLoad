@@ -47,7 +47,7 @@ def downloadRTSP(response: ResponseObject):
     # If the video exists, return
     if os.path.isfile(filename):
         return
-    print("Trying to download from: " + response.url)
+    logging.info("Trying to download from the url %s" % response.url)
     stream = ffmpeg.output(ffmpeg.input(response.url),
                            filename,
                            reorder_queue_size="0",
