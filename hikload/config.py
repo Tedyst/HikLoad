@@ -5,8 +5,9 @@ CONFIG = {
         "201"
     ],
     "user": "admin",
-    "password": "",
+    "password": "cosica.123",
     "downloadPath": "./Downloads/",
     "debug": False,
     "skipFrames": 0,
+    "skipFirstSeconds": 5,
 }

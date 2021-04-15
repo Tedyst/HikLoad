@@ -10,7 +10,7 @@ import logging
 
 
 FILE_NAME_FRAMES = "img_{response.camera}_{response.starttime}_%06d.jpg"
-FILE_NAME_NORMAL = "{response.camera}_{response.name}.mp4"
+FILE_NAME_NORMAL = "{response.camera}_{response.name}.mkv"
 
 
 def getConfig(text):
@@ -48,12 +48,19 @@ def downloadRTSP(response: ResponseObject):
     if os.path.isfile(filename):
         return
     logging.info("Trying to download from the url %s" % response.url)
+    skipSeconds = 0
+    if int(getConfig("skipFirstSeconds")) != 0:
+        skipSeconds = getConfig("skipFirstSeconds")
     stream = ffmpeg.output(ffmpeg.input(response.url),
                            filename,
-                           reorder_queue_size="0",
-                           timeout=0, stimeout=100,
+                           vcodec="copy",
+                           acodec="copy",
+                           reorder_queue_size=0,
+                           timeout=10,
+                           stimeout=10,
                            rtsp_flags="listen",
-                           rtsp_transport="tcp"
+                           rtsp_transport="tcp",
+                           ss=skipSeconds
                            )
     if getConfig("debug"):
         return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
@@ -70,6 +77,9 @@ def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int):
     if os.path.isfile(filename % 1):
         return
     logging.info("Trying to download from %s" % response.url)
+    skipSeconds = 0
+    if int(getConfig("skipFirstSeconds")) != 0:
+        skipSeconds = getConfig("skipFirstSeconds")
     stream = ffmpeg.output(ffmpeg.input(response.url),
                            filename,
                            reorder_queue_size=100,
@@ -77,11 +87,12 @@ def downloadRTSPOnlyFrames(response: ResponseObject, modulo: int):
                            rtsp_flags="listen",
                            rtsp_transport="tcp",
                            vf="select=not(mod(n\,%s))" % (modulo),
-                           vsync="vfr"
+                           vsync="vfr",
+                           ss=skipSeconds
                            )
     if getConfig("debug"):
         return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
-    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=True)
+    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
 def chdir(newpath):
