@@ -19,7 +19,7 @@ def main():
     # TODO: Specify time in config file
     # For now we just download the files from today
     starttime = datetime.now().replace(
-        hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
+        hour=0, minute=0, second=0, microsecond=0, day=1).isoformat() + "Z"
     endtime = datetime.now().replace(
         hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
