@@ -11,7 +11,7 @@ server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 
 channelList = hikvisionapi.Streaming.getChannels(server)
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 if not os.path.exists("Downloads"):
     logging.debug("Created folder Downloads")
@@ -37,7 +37,7 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
 
         # If we didn't have any recordings for this channel today
         if int(recordings['CMSearchResult']['numOfMatches']) == 0:
-            logging.info("Could not find any videos for camera %s" % channel)
+            logging.info("Could not find any videos for camera %s" % cid)
             continue
 
         # This loops from every recording
@@ -50,9 +50,9 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
             name = re.sub(r'[-T\:Z]', '', recording['timeSpan']['startTime'])
             name = name + ".mkv"
 
-            print("Started downloading ", name)
+            logging.info("Started downloading %s" % name)
             hikvisionapi.RTSPutils.downloadRTSP(url,
                                                 name,
                                                 debug=True,
                                                 force=True)
-            print("Finished downloading", name)
+            logging.info("Finished downloading %s" % name)
