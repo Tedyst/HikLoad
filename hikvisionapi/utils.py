@@ -50,6 +50,9 @@ def getXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
                 raise Exception(response['ResponseStatus']['statusString'])
+    if 'userCheck' in response:
+        if response['userCheck']['statusValue'] != 200:
+            raise Exception(response['userCheck']['statusString'])
     return response
 
 
@@ -76,8 +79,6 @@ def getXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
-    if responseRaw.status_code == 401:
-        raise Exception("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
@@ -92,6 +93,9 @@ def putXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
                 raise Exception(response['ResponseStatus']['statusString'])
+    if 'userCheck' in response:
+        if response['userCheck']['statusValue'] != 200:
+            raise Exception(response['userCheck']['statusString'])
     return response
 
 
@@ -118,8 +122,6 @@ def putXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
-    if responseRaw.status_code == 401:
-        raise Exception("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
@@ -163,6 +165,9 @@ def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str 
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
                 raise Exception(response['ResponseStatus']['statusString'])
+    if 'userCheck' in response:
+        if response['userCheck']['statusValue'] != 200:
+            raise Exception(response['userCheck']['statusString'])
     return response
 
 
@@ -183,8 +188,6 @@ def postXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
         data=xmldata,
         headers=headers,
         auth=HTTPDigestAuth(server.user, server.password))
-    if responseRaw.status_code == 401:
-        raise Exception("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
