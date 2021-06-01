@@ -1,7 +1,0 @@
-version: "3"
-
-services:
-  hikload:
-    build:
-      context: ./
-    restart: always
