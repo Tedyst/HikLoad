@@ -1,47 +1,16 @@
 # HikLoad
 
-A short Python script that downloads video recordings from the day that this script is run from a Hikvision DVR.
+A collection of short Python scripts that utilize the ISAPI specification for Hikvision DVR/NVRs.
 
-## Using with docker
-
-```sh
-docker pull tedyst/hikload:latest
-```
-
-If you are using docker, you could use the environment variables:
-
-```docker
-ENV server "192.168.1.69"
-ENV cameras "101 201"
-ENV user "admin"
-```
+`downloadTodayRecordings.py` downloads video recordings from the day that this script is run
+`downloadTodayRecordingsAsFrames.py` downloads video recordings from the day that this script is run and saves every 10th frame
 
 ## Modifying the config
 
-You can modify ./config.py as follows:
+To use your own DVR it is usually only needed to modify this specific line from the scripts. The first parameter is the IP, the second one is the username and the third is the password. 
+
+The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
 
 ```python
-CONFIG = {
-    //This is the address of the DVR
-    "server": "192.168.1.69",
-    //These are the cameras that you are going to download from.
-    //101 means main stream of camera 1
-    //201 means main stream of camera 2
-    "cameras": [
-        "101",
-        "201"
-    ],
-    "user": "admin",
-    "password": "",
-    "downloadPath": "./Downloads/"
-}
-```
-
-## Using your own script
-
-```python
-from hikload.util import getList, downloadRTSP
-
-for stream in getList(ElementTree):
-    downloadRTSP(stream)
+server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 ```
