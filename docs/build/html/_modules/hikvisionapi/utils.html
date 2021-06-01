@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hikvisionapi.utils &#8212; Hikload  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for hikvisionapi.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">requests.auth</span> <span class="kn">import</span> <span class="n">HTTPDigestAuth</span>
+<span class="kn">from</span> <span class="nn">lxml</span> <span class="kn">import</span> <span class="n">etree</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+<span class="kn">from</span> <span class="nn">xmler</span> <span class="kn">import</span> <span class="n">dict2xml</span> <span class="k">as</span> <span class="n">d2xml</span>
+
+
+<div class="viewcode-block" id="HikvisionServer"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.HikvisionServer">[docs]</a><span class="k">class</span> <span class="nc">HikvisionServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This is a class for storing basic info about a DVR.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        host (str): The host address, without `http` or `https`</span>
+<span class="sd">        user (str): The username for the DVR</span>
+<span class="sd">        password (str): The password</span>
+<span class="sd">        protocol (str): The intended protocol</span>
+<span class="sd">                        Should be `http`(default) or `https`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="s2">&quot;http&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">protocol</span> <span class="o">=</span> <span class="n">protocol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">user</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">password</span>
+
+<div class="viewcode-block" id="HikvisionServer.address"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.HikvisionServer.address">[docs]</a>    <span class="k">def</span> <span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">credentials</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This returns the formatted address of the DVR</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            protocol (bool): Includes the `http`/`https` part in URL (default is True)</span>
+<span class="sd">            credentials (bool): Includes the credentials in URL (default is True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">protocol</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol</span> <span class="o">+</span> <span class="s2">&quot;://&quot;</span>
+        <span class="k">if</span> <span class="n">credentials</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">@&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+        <span class="n">string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">+</span> <span class="s2">&quot;/ISAPI&quot;</span>
+        <span class="k">return</span> <span class="n">string</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">getXML</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">tosend</span> <span class="o">=</span> <span class="n">xmldata</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">tosend</span> <span class="o">=</span> <span class="n">dict2xml</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Data sent: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">tosend</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">xml2dict</span><span class="p">(</span><span class="n">getXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">xmldata</span><span class="o">=</span><span class="n">tosend</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s1">&#39;ResponseStatus&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;statusCode&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusCode&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;userCheck&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusValue&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">response</span>
+
+
+<div class="viewcode-block" id="getXMLRaw"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.getXMLRaw">[docs]</a><span class="k">def</span> <span class="nf">getXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This returns the response of the DVR to the following GET request</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        server (HikvisionServer): The basic info about the DVR</span>
+<span class="sd">        path (str): The ISAPI path that will be executed</span>
+<span class="sd">        xmldata (str): This should be formatted using `utils.dict2xml`</span>
+<span class="sd">                       This is the data that will be transmitted to the server.</span>
+<span class="sd">                       It is optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">xmldata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">xmldata</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="n">responseXML</span> <span class="o">=</span> <span class="n">responseRaw</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">return</span> <span class="n">responseXML</span></div>
+
+
+<span class="k">def</span> <span class="nf">putXML</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">tosend</span> <span class="o">=</span> <span class="n">xmldata</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">tosend</span> <span class="o">=</span> <span class="n">dict2xml</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Data sent: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">tosend</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">xml2dict</span><span class="p">(</span><span class="n">putXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">xmldata</span><span class="o">=</span><span class="n">tosend</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s1">&#39;ResponseStatus&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;statusCode&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusCode&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;userCheck&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusValue&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">response</span>
+
+
+<div class="viewcode-block" id="putXMLRaw"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.putXMLRaw">[docs]</a><span class="k">def</span> <span class="nf">putXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This returns the response of the DVR to the following PUT request</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        server (HikvisionServer): The basic info about the DVR</span>
+<span class="sd">        path (str): The ISAPI path that will be executed</span>
+<span class="sd">        xmldata (str): This should be formatted using `utils.dict2xml`</span>
+<span class="sd">                       This is the data that will be transmitted to the server.</span>
+<span class="sd">                       It is optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">xmldata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">xmldata</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="n">responseXML</span> <span class="o">=</span> <span class="n">responseRaw</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">return</span> <span class="n">responseXML</span></div>
+
+
+<div class="viewcode-block" id="deleteXMLRaw"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.deleteXMLRaw">[docs]</a><span class="k">def</span> <span class="nf">deleteXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">xmldata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This returns the response of the DVR to the following DELETE request</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        server (HikvisionServer): The basic info about the DVR</span>
+<span class="sd">        path (str): The ISAPI path that will be executed</span>
+<span class="sd">        xmldata (str): This should be formatted using `utils.dict2xml`</span>
+<span class="sd">                       This is the data that will be transmitted to the server.</span>
+<span class="sd">                       It is optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">xmldata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">xmldata</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">responseRaw</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Wrong username or password&quot;</span><span class="p">)</span>
+    <span class="n">responseXML</span> <span class="o">=</span> <span class="n">responseRaw</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">return</span> <span class="n">responseXML</span></div>
+
+
+<span class="k">def</span> <span class="nf">postXML</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">tosend</span> <span class="o">=</span> <span class="n">xmldata</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">tosend</span> <span class="o">=</span> <span class="n">dict2xml</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Data sent: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">tosend</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">xml2dict</span><span class="p">(</span><span class="n">postXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">xmldata</span><span class="o">=</span><span class="n">tosend</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s1">&#39;ResponseStatus&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;statusCode&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusCode&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;ResponseStatus&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;userCheck&#39;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusValue&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;userCheck&#39;</span><span class="p">][</span><span class="s1">&#39;statusString&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">response</span>
+
+
+<div class="viewcode-block" id="postXMLRaw"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.postXMLRaw">[docs]</a><span class="k">def</span> <span class="nf">postXMLRaw</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">HikvisionServer</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xmldata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This returns the response of the DVR to the following POST request</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        server (HikvisionServer): The basic info about the DVR</span>
+<span class="sd">        path (str): The ISAPI path that will be executed</span>
+<span class="sd">        xmldata (str): This should be formatted using `utils.dict2xml`</span>
+<span class="sd">                       This is the data that will be transmitted to the server.</span>
+<span class="sd">                       It is optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">}</span>
+    <span class="n">responseRaw</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">address</span><span class="p">()</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">xmldata</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">HTTPDigestAuth</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">user</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+    <span class="n">responseXML</span> <span class="o">=</span> <span class="n">responseRaw</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">return</span> <span class="n">responseXML</span></div>
+
+
+<div class="viewcode-block" id="xml2dict"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.xml2dict">[docs]</a><span class="k">def</span> <span class="nf">xml2dict</span><span class="p">(</span><span class="n">xml</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts string formatted for the DVR to a dict</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        xml (string): The XML string</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dictionary (dict): The resulting dictionary</span>
+<span class="sd">                           This has `@attrs` in place of the attributes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Taken from https://stackoverflow.com/questions/4255277/</span>
+    <span class="n">xslt</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;&quot;&lt;xsl:stylesheet version=&quot;1.0&quot;</span>
+<span class="s2">    xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot;&gt;</span>
+<span class="s2">    &lt;xsl:output method=&quot;xml&quot; indent=&quot;no&quot;/&gt;</span>
+
+<span class="s2">    &lt;xsl:template match=&quot;/|comment()|processing-instruction()&quot;&gt;</span>
+<span class="s2">        &lt;xsl:copy&gt;</span>
+<span class="s2">            &lt;xsl:apply-templates/&gt;</span>
+<span class="s2">        &lt;/xsl:copy&gt;</span>
+<span class="s2">    &lt;/xsl:template&gt;</span>
+
+<span class="s2">    &lt;xsl:template match=&quot;*&quot;&gt;</span>
+<span class="s2">        &lt;xsl:element name=&quot;{local-name()}&quot;&gt;</span>
+<span class="s2">            &lt;xsl:apply-templates select=&quot;@*|node()&quot;/&gt;</span>
+<span class="s2">        &lt;/xsl:element&gt;</span>
+<span class="s2">    &lt;/xsl:template&gt;</span>
+
+<span class="s2">    &lt;xsl:template match=&quot;@*&quot;&gt;</span>
+<span class="s2">        &lt;xsl:attribute name=&quot;{local-name()}&quot;&gt;</span>
+<span class="s2">            &lt;xsl:value-of select=&quot;.&quot;/&gt;</span>
+<span class="s2">        &lt;/xsl:attribute&gt;</span>
+<span class="s2">    &lt;/xsl:template&gt;</span>
+<span class="s2">&lt;/xsl:stylesheet&gt;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">xml</span><span class="p">,</span> <span class="s2">&quot;UTF8&quot;</span><span class="p">)</span>
+
+    <span class="n">xmlstr</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">XMLParser</span><span class="p">(</span><span class="n">ns_clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xmlstr</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">)</span>
+
+    <span class="n">xslt_doc</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">xslt</span><span class="p">))</span>
+    <span class="n">transform</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">XSLT</span><span class="p">(</span><span class="n">xslt_doc</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tree2dict</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">())</span></div>
+
+
+<span class="k">def</span> <span class="nf">tree2dict</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">subdict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">({})</span>
+    <span class="c1"># iterate over the children of this element--tree.getroot</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">iterchildren</span><span class="p">():</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">tree2dict</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># handle duplicated tags</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">subdict</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">subdict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="c1"># use append to assert exception</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="n">subdict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="n">subdict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">v</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]]})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">subdict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">subdict</span><span class="p">:</span>
+        <span class="n">attribdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">attrib</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">attribdict</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="n">subdict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;@attrs&quot;</span><span class="p">:</span> <span class="n">attribdict</span><span class="p">})</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span> <span class="n">subdict</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="dict2xml"><a class="viewcode-back" href="../../index.html#hikvisionapi.utils.dict2xml">[docs]</a><span class="k">def</span> <span class="nf">dict2xml</span><span class="p">(</span><span class="n">dictionary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a dict to a string formatted for the DVR</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        dictionary (dict): The resulting dictionary</span>
+<span class="sd">                           This has `@attrs` in place of the attributes</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        xml (string): The XML string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="p">:</span>
+        <span class="n">dictionary</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;@attrs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;xmlns&quot;</span><span class="p">:</span> <span class="s2">&quot;http://www.hikvision.com/ver20/XMLSchema&quot;</span><span class="p">})</span>
+    <span class="n">xml</span> <span class="o">=</span> <span class="n">d2xml</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;&quot;&quot;&lt;?xml version = &quot;1.0&quot; encoding = &quot;UTF-8&quot; ?&gt;&quot;&quot;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Hikload</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Stoica Tedy.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
