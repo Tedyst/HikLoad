@@ -1,9 +1,11 @@
 import logging
-import requests
-from requests.auth import HTTPDigestAuth
-from lxml import etree
 from collections import OrderedDict
 from io import BytesIO
+from typing import Union
+
+import requests
+from lxml import etree
+from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
 
 
@@ -148,7 +150,7 @@ def putXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
     return responseXML
 
 
-def deleteXMLRaw(server: HikvisionServer, path, xmldata=None) -> dict:
+def deleteXMLRaw(server: HikvisionServer, path: str, xmldata=None) -> dict:
     """
     This returns the response of the DVR to the following DELETE request
 
@@ -224,7 +226,7 @@ def postXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
     return responseXML
 
 
-def xml2dict(xml: str) -> dict:
+def xml2dict(xml: Union[str, dict]) -> dict:
     """Converts string formatted for the DVR to a dict
 
     Parameters:
