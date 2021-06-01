@@ -7,7 +7,7 @@ import re
 import os
 import logging
 
-server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "cosica.123")
+server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 # Download a frame for every 10 frames in the video
 modulo = 10
 
