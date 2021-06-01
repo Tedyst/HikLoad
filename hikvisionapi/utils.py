@@ -8,7 +8,7 @@ from xmler import dict2xml as d2xml
 
 
 class HikvisionServer:
-    """This is a class for storing basic info about a DVR.
+    """This is a class for storing basic info about a DVR/NVR.
 
     Parameters:
         host (str): The host address, without `http` or `https`
@@ -41,6 +41,17 @@ class HikvisionServer:
 
 
 def getXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+    """This returns the response of the DVR to the following GET request
+
+    Parameters:
+        server (HikvisionServer): The basic info about the DVR
+        path (str): The ISAPI path that will be executed
+        data (dict): This is the data that will be transmitted to the server.
+                     It is optional, and will overwrite `xmldata`
+        xmldata (str): This should be formatted using `utils.dict2xml`
+                       This is the data that will be transmitted to the server.
+                       It is optional.
+    """
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
@@ -84,6 +95,17 @@ def getXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
 
 
 def putXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+    """This returns the response of the DVR to the following PUT request
+
+    Parameters:
+        server (HikvisionServer): The basic info about the DVR
+        path (str): The ISAPI path that will be executed
+        data (dict): This is the data that will be transmitted to the server.
+                     It is optional, and will overwrite `xmldata`
+        xmldata (str): This should be formatted using `utils.dict2xml`
+                       This is the data that will be transmitted to the server.
+                       It is optional.
+    """
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
@@ -156,6 +178,17 @@ def deleteXMLRaw(server: HikvisionServer, path, xmldata=None) -> dict:
 
 
 def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+    """This returns the response of the DVR to the following POST request
+
+    Parameters:
+        server (HikvisionServer): The basic info about the DVR
+        path (str): The ISAPI path that will be executed
+        data (dict): This is the data that will be transmitted to the server.
+                     It is optional, and will overwrite `xmldata`
+        xmldata (str): This should be formatted using `utils.dict2xml`
+                       This is the data that will be transmitted to the server.
+                       It is optional.
+    """
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
@@ -172,8 +205,7 @@ def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str 
 
 
 def postXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
-    """
-    This returns the response of the DVR to the following POST request
+    """This returns the response of the DVR to the following POST request
 
     Parameters:
         server (HikvisionServer): The basic info about the DVR
