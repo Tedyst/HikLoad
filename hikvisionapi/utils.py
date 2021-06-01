@@ -9,6 +9,10 @@ from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
 
 
+class HikvisionException(Exception):
+    pass
+
+
 class HikvisionServer:
     """This is a class for storing basic info about a DVR/NVR.
 
@@ -62,10 +66,11 @@ def getXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise Exception(response['ResponseStatus']['statusString'])
+                raise HikvisionException(
+                    response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise Exception(response['userCheck']['statusString'])
+            raise HikvisionException(response['userCheck']['statusString'])
     return response
 
 
@@ -116,10 +121,11 @@ def putXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise Exception(response['ResponseStatus']['statusString'])
+                raise HikvisionException(
+                    response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise Exception(response['userCheck']['statusString'])
+            raise HikvisionException(response['userCheck']['statusString'])
     return response
 
 
@@ -174,7 +180,7 @@ def deleteXMLRaw(server: HikvisionServer, path: str, xmldata=None) -> dict:
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
     if responseRaw.status_code == 401:
-        raise Exception("Wrong username or password")
+        raise HikvisionException("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
@@ -199,10 +205,10 @@ def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str 
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise Exception(response['ResponseStatus']['statusString'])
+                raise HikvisionException(response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise Exception(response['userCheck']['statusString'])
+            raise HikvisionException(response['userCheck']['statusString'])
     return response
 
 
