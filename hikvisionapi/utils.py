@@ -1,3 +1,4 @@
+import hikvisionapi
 import logging
 from collections import OrderedDict
 from io import BytesIO
@@ -9,44 +10,7 @@ from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
 
 
-class HikvisionException(Exception):
-    pass
-
-
-class HikvisionServer:
-    """This is a class for storing basic info about a DVR/NVR.
-
-    Parameters:
-        host (str): The host address, without `http` or `https`
-        user (str): The username for the DVR
-        password (str): The password
-        protocol (str): The intended protocol
-                        Should be `http`(default) or `https`
-    """
-
-    def __init__(self, host, user, password, protocol="http"):
-        self.host = host
-        self.protocol = protocol
-        self.user = user
-        self.password = password
-
-    def address(self, protocol: bool = True, credentials: bool = True):
-        """This returns the formatted address of the DVR
-
-        Parameters:
-            protocol (bool): Includes the `http`/`https` part in URL (default is True)
-            credentials (bool): Includes the credentials in URL (default is True)
-        """
-        string = ""
-        if protocol:
-            string += self.protocol + "://"
-        if credentials:
-            string += "%s:%s@" % (self.user, self.password)
-        string += self.host + "/ISAPI"
-        return string
-
-
-def getXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
     """This returns the response of the DVR to the following GET request
 
     Parameters:
@@ -66,15 +30,16 @@ def getXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise HikvisionException(
+                raise hikvisionapi.HikvisionException(
                     response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise HikvisionException(response['userCheck']['statusString'])
+            raise hikvisionapi.HikvisionException(
+                response['userCheck']['statusString'])
     return response
 
 
-def getXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
+def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
     """
     This returns the response of the DVR to the following GET request
 
@@ -101,7 +66,7 @@ def getXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
     return responseXML
 
 
-def putXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
     """This returns the response of the DVR to the following PUT request
 
     Parameters:
@@ -121,15 +86,16 @@ def putXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str =
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise HikvisionException(
+                raise hikvisionapi.HikvisionException(
                     response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise HikvisionException(response['userCheck']['statusString'])
+            raise hikvisionapi.HikvisionException(
+                response['userCheck']['statusString'])
     return response
 
 
-def putXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
+def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
     """
     This returns the response of the DVR to the following PUT request
 
@@ -156,7 +122,7 @@ def putXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
     return responseXML
 
 
-def deleteXMLRaw(server: HikvisionServer, path: str, xmldata=None) -> dict:
+def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None) -> dict:
     """
     This returns the response of the DVR to the following DELETE request
 
@@ -180,12 +146,12 @@ def deleteXMLRaw(server: HikvisionServer, path: str, xmldata=None) -> dict:
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
     if responseRaw.status_code == 401:
-        raise HikvisionException("Wrong username or password")
+        raise hikvisionapi.HikvisionException("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
 
-def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
     """This returns the response of the DVR to the following POST request
 
     Parameters:
@@ -205,14 +171,16 @@ def postXML(server: HikvisionServer, path: str, data: dict = None, xmldata: str 
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
-                raise HikvisionException(response['ResponseStatus']['statusString'])
+                raise hikvisionapi.HikvisionException(
+                    response['ResponseStatus']['statusString'])
     if 'userCheck' in response:
         if response['userCheck']['statusValue'] != 200:
-            raise HikvisionException(response['userCheck']['statusString'])
+            raise hikvisionapi.HikvisionException(
+                response['userCheck']['statusString'])
     return response
 
 
-def postXMLRaw(server: HikvisionServer, path: str, xmldata: str = None) -> dict:
+def postXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
     """This returns the response of the DVR to the following POST request
 
     Parameters:

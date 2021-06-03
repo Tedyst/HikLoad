@@ -1,7 +1,4 @@
 import hikvisionapi
-import hikvisionapi.System
-import hikvisionapi.Streaming as Streaming
-from hikvisionapi.RTSPutils import downloadRTSPOnlyFrames
 from datetime import datetime
 import re
 import os
@@ -10,6 +7,8 @@ import logging
 server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 # Download a frame for every 10 frames in the video
 modulo = 10
+
+print(server.System.getDeviceInfo())
 
 channelList = hikvisionapi.Streaming.getChannels(server)
 
