@@ -122,6 +122,35 @@ def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
     return responseXML
 
 
+def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+    """This returns the response of the DVR to the following DELETE request
+
+    Parameters:
+        server (HikvisionServer): The basic info about the DVR
+        path (str): The ISAPI path that will be executed
+        data (dict): This is the data that will be transmitted to the server.
+                     It is optional, and will overwrite `xmldata`
+        xmldata (str): This should be formatted using `utils.dict2xml`
+                       This is the data that will be transmitted to the server.
+                       It is optional.
+    """
+    tosend = xmldata
+    if data:
+        tosend = dict2xml(data)
+    logging.debug("Data sent: %s" % tosend)
+    response = xml2dict(deleteXMLRaw(server, path, xmldata=tosend))
+    if 'ResponseStatus' in response:
+        if 'statusCode' in response['ResponseStatus']:
+            if response['ResponseStatus']['statusCode'] != '1':
+                raise hikvisionapi.HikvisionException(
+                    response['ResponseStatus']['statusString'])
+    if 'userCheck' in response:
+        if response['userCheck']['statusValue'] != 200:
+            raise hikvisionapi.HikvisionException(
+                response['userCheck']['statusString'])
+    return response
+
+
 def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None) -> dict:
     """
     This returns the response of the DVR to the following DELETE request

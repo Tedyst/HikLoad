@@ -8,8 +8,6 @@ server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 # Download a frame for every 10 frames in the video
 modulo = 10
 
-print(server.System.getDeviceInfo())
-
 channelList = hikvisionapi.Streaming.getChannels(server)
 
 logging.getLogger().setLevel(logging.INFO)

@@ -1,4 +1,5 @@
 from hikvisionapi._System import _System
+from hikvisionapi._Streaming import _Streaming
 
 
 class HikvisionException(Exception):
@@ -22,6 +23,7 @@ class HikvisionServer:
         self.user = user
         self.password = password
         self.System = _System(self)
+        self.Streaming = _Streaming(self)
 
     def address(self, protocol: bool = True, credentials: bool = True):
         """This returns the formatted address of the DVR

@@ -1,7 +1,4 @@
 import hikvisionapi
-import hikvisionapi.System
-import hikvisionapi.Streaming as Streaming
-import hikvisionapi.RTSPutils
 from datetime import datetime
 import re
 import os
@@ -9,7 +6,7 @@ import logging
 
 server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 
-channelList = hikvisionapi.Streaming.getChannels(server)
+channelList = server.Streaming.getChannels()
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -32,8 +29,8 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
         endtime = datetime.now().replace(
             hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
-        recordings = Streaming.getPastRecordingsForID(server, cid, starttime,
-                                                      endtime)
+        recordings = server.Streaming.getPastRecordingsForID(cid, starttime,
+                                                             endtime)
 
         # If we didn't have any recordings for this channel today
         if int(recordings['CMSearchResult']['numOfMatches']) == 0:
@@ -51,8 +48,8 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
             name = name + ".mkv"
 
             logging.info("Started downloading %s" % name)
-            hikvisionapi.RTSPutils.downloadRTSP(url,
-                                                name,
-                                                debug=True,
-                                                force=True)
+            hikvisionapi.downloadRTSP(url,
+                                      name,
+                                      debug=True,
+                                      force=True)
             logging.info("Finished downloading %s" % name)
