@@ -4,7 +4,7 @@ import re
 import os
 import logging
 
-server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
+server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "cosica.123")
 
 channelList = server.Streaming.getChannels()
 

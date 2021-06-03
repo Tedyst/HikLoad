@@ -79,21 +79,18 @@ class _Streaming():
             xmlns="http://www.isapi.org/ver20/XMLSchema">
             <searchID>{812F04E0-4089-11A3-9A0C-0305E82C2906}</searchID>
             <trackIDList>
-            <trackID>9</trackID>
+            <trackID></trackID>
             </trackIDList>
             <timeSpanList>
             <timeSpan>
-            <startTime>2013-06-10T12:00:00Z</startTime>
-            <endTime>2013-06-10T13:30:00Z</endTime>
+            <startTime></startTime>
+            <endTime></endTime>
             </timeSpan>
             </timeSpanList>
             <contentTypeList>
             <contentType>video</contentType>
             </contentTypeList>
             <maxResults>100</maxResults>
-            <metadataList>
-            <metadataDescriptor>recordType.meta.hikvision.com/motion</metadataDescriptor>
-            </metadataList>
             </CMSearchDescription>""")
         dictdata['CMSearchDescription']['trackIDList']['trackID'] = ChannelID
         (dictdata['CMSearchDescription']['timeSpanList']
