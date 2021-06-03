@@ -70,7 +70,8 @@ class _Streaming():
         data = hikvisionapi.xml2dict(channel)
         control = data['StreamingChannel']['Transport']['ControlProtocolList']
         if control['ControlProtocol']['streamingTransport'] != "RTSP":
-            return ""
+            raise hikvisionapi.HikvisionException(
+                "Cannot get RTSP link for this ChannelID")
         return "rtsp://%s:554/Streaming/channels/%s" % (self.parent.address(protocol=False, credentials=True), ChannelID)
 
     def getPastRecordingsForID(self, ChannelID, startTime="", endTime=""):
