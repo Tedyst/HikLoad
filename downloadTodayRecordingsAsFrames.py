@@ -8,7 +8,7 @@ server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 # Download a frame for every 10 frames in the video
 modulo = 10
 
-channelList = hikvisionapi.Streaming.getChannels(server)
+channelList = server.Streaming.getChannels()
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -31,8 +31,8 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
         endtime = datetime.now().replace(
             hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
-        recordings = Streaming.getPastRecordingsForID(server, cid, starttime,
-                                                      endtime)
+        recordings = server.Streaming.getPastRecordingsForID(cid, starttime,
+                                                             endtime)
 
         # If we didn't have any recordings for this channel today
         if int(recordings['CMSearchResult']['numOfMatches']) == 0:
@@ -50,9 +50,9 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
             name = name + "_%06d.mkv"
 
             logging.info("Started downloading %s" % name)
-            downloadRTSPOnlyFrames(url=url,
-                                   videoName=name,
-                                   modulo=modulo,
-                                   debug=True,
-                                   force=True)
+            hikvisionapi.downloadRTSPOnlyFrames(url=url,
+                                                videoName=name,
+                                                modulo=modulo,
+                                                debug=True,
+                                                force=True)
             logging.info("Finished downloading %s" % name)
