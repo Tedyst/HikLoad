@@ -25,6 +25,22 @@ class HikvisionServer:
         self.System = _System(self)
         self.Streaming = _Streaming(self)
 
+    def __repr__(self) -> str:
+        return "%s(host=%s, protocol=%s, user=%s)" % (self.__class__.__name__, self.host, self.protocol, self.user)
+
+    def __eq__(self, o: object) -> bool:
+        if o.__class__ is self.__class__:
+            return (self.host, self.protocol, self.user, self.password) == (o.host, o.protocol, o.user, o.password)
+        else:
+            return NotImplemented
+
+    def __ne__(self, o: object) -> bool:
+        result = self.__eq__(o)
+        if result is NotImplemented:
+            return NotImplemented
+        else:
+            return not result
+
     def address(self, protocol: bool = True, credentials: bool = True):
         """This returns the formatted address of the DVR
 
