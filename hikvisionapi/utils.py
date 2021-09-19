@@ -52,13 +52,14 @@ def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
     """
     headers = {'Content-Type': 'application/xml'}
     if xmldata is None:
+        logging.info("%s/%s" % (server.address(), path))
         responseRaw = requests.get(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
     else:
         responseRaw = requests.get(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
@@ -109,12 +110,12 @@ def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
     headers = {'Content-Type': 'application/xml'}
     if xmldata is None:
         responseRaw = requests.put(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
     else:
         responseRaw = requests.put(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
@@ -165,12 +166,12 @@ def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None) 
     headers = {'Content-Type': 'application/xml'}
     if xmldata is None:
         responseRaw = requests.delete(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
     else:
         responseRaw = requests.delete(
-            server.address() + path,
+            "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
@@ -221,7 +222,7 @@ def postXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = N
     """
     headers = {'Content-Type': 'application/xml'}
     responseRaw = requests.post(
-        server.address() + path,
+        "%s/%s" % (server.address(), path),
         data=xmldata,
         headers=headers,
         auth=HTTPDigestAuth(server.user, server.password))
