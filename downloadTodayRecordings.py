@@ -52,6 +52,5 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
             logging.info("Started downloading %s" % name)
             hikvisionapi.downloadRTSP(url,
                                       name,
-                                      debug=True,
-                                      force=True)
+                                      force=False)
             logging.info("Finished downloading %s" % name)
