@@ -16,17 +16,21 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
     """
     logging.info("Starting download from: " + url)
-    stream = ffmpeg.output(ffmpeg.input(url),
-                           videoName,
-                           vcodec="copy",
-                           acodec="copy",
-                           reorder_queue_size=0,
-                           timeout=10,
-                           stimeout=10,
-                           rtsp_flags="listen",
-                           rtsp_transport="tcp",
-                           ss=skipSeconds
-                           )
+    try:
+        stream = ffmpeg.output(ffmpeg.input(url),
+                               videoName,
+                               vcodec="copy",
+                               acodec="copy",
+                               reorder_queue_size=0,
+                               timeout=10,
+                               stimeout=10,
+                               rtsp_flags="listen",
+                               rtsp_transport="tcp",
+                               ss=skipSeconds
+                               )
+    except AttributeError:
+        raise Exception(
+            "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     if os.path.exists(videoName):
         logging.debug(
             "The file %s exists, should have been downloaded from %s" % (videoName, url))
@@ -56,16 +60,20 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
     if modulo <= 0:
         raise Exception("modulo is not valid")
     logging.info("Trying to download from %s" % url)
-    stream = ffmpeg.output(ffmpeg.input(url),
-                           videoName,
-                           reorder_queue_size=100,
-                           timeout=1, stimeout=1,
-                           rtsp_flags="listen",
-                           rtsp_transport="tcp",
-                           vf="select=not(mod(n\,%s))" % (modulo),
-                           vsync="vfr",
-                           ss=skipSeconds
-                           )
+    try:
+        stream = ffmpeg.output(ffmpeg.input(url),
+                               videoName,
+                               reorder_queue_size=100,
+                               timeout=1, stimeout=1,
+                               rtsp_flags="listen",
+                               rtsp_transport="tcp",
+                               vf="select=not(mod(n\,%s))" % (modulo),
+                               vsync="vfr",
+                               ss=skipSeconds
+                               )
+    except AttributeError:
+        raise Exception(
+            "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     if debug:
         return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
