@@ -14,3 +14,19 @@ The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ di
 ```python
 server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 ```
+
+## Running the scripts
+
+Due to [common problems](https://github.com/kkroening/ffmpeg-python/issues/174#issuecomment-561546739) found while installing the dependencies needed by this project, it is recommended to use a python virtualenv. Here is how to setup one:
+
+```bash
+pip install virtualenv
+virtualenv venv
+```
+
+And everytime you restart the terminal and want to use the virtualenv, you need to run these commands:
+
+```bash
+source venv/bin/activate # On Linux/Mac OS
+venv\Scripts\activate    # On Windows
+```
