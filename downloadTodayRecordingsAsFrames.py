@@ -28,10 +28,10 @@ for channel in channelList['StreamingChannelList']['StreamingChannel']:
     # The channel is a primary channel
     if (int(cid) % 10 == 1):
         # This makes sure that we only get today's recordings
-        starttime = datetime.now().replace(
-            hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
-        endtime = datetime.now().replace(
-            hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
+        starttime = datetime.utcnow().replace(
+            hour=0, minute=0, second=0, microsecond=0).isoformat()
+        endtime = datetime.utcnow().replace(
+            hour=23, minute=59, second=59, microsecond=0).isoformat()
 
         recordings = server.Streaming.getPastRecordingsForID(cid, starttime,
                                                              endtime)
