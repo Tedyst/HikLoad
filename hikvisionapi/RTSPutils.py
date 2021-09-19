@@ -26,8 +26,6 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
         stream = ffmpeg.output(
             stream,
             videoName,
-            vcodec="copy",
-            acodec="copy",
             ss=skipSeconds
         )
     except AttributeError:
