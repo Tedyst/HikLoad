@@ -22,6 +22,9 @@ Due to [common problems](https://github.com/kkroening/ffmpeg-python/issues/174#i
 ```bash
 pip install virtualenv
 virtualenv venv
+source venv/bin/activate # On Linux/Mac OS
+venv\Scripts\activate    # On Windows
+pip install -r requirements.txt
 ```
 
 And everytime you restart the terminal and want to use the virtualenv, you need to run these commands:
