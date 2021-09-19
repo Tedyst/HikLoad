@@ -9,6 +9,8 @@ server = hikvisionapi.HikvisionServer("192.168.10.239", "admin", "password")
 channelList = server.Streaming.getChannels()
 
 logging.getLogger().setLevel(logging.INFO)
+# If you want to see the debug messages, you can uncomment the following line.
+# logging.getLogger().setLevel(logging.DEBUG)
 
 if not os.path.exists("Downloads"):
     logging.debug("Created folder Downloads")
