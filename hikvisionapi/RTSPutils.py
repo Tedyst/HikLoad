@@ -21,6 +21,7 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
             url,
             rtsp_transport="tcp",
             stimeout=1,
+            t=seconds,
         )
         stream = ffmpeg.output(
             stream,
@@ -67,6 +68,7 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
             url,
             rtsp_transport="tcp",
             stimeout=1,
+            t=seconds,
         )
         stream = ffmpeg.output(
             stream,
