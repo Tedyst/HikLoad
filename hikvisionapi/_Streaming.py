@@ -96,7 +96,7 @@ class _Streaming():
         dictdata['CMSearchDescription']['trackIDList']['trackID'] = str(
             ChannelID)
         (dictdata['CMSearchDescription']['timeSpanList']
-         ['timeSpan']['startTime']) = startTime
+         ['timeSpan']['startTime']) = str(startTime)
         (dictdata['CMSearchDescription']['timeSpanList']
-         ['timeSpan']['endTime']) = endTime
+         ['timeSpan']['endTime']) = str(endTime)
         return hikvisionapi.getXML(self.parent, "ContentMgmt/search", data=dictdata)
