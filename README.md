@@ -7,6 +7,7 @@ To use your own DVR it is usually only needed to change the arguments for the sc
 ```
 usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders | --no-folders] [--debug | --no-debug] [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS]
                    [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS] [--skipdownload | --no-skipdownload]
+                   [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -36,6 +37,9 @@ optional arguments:
   --days DAYS           download videos for the last X days (ignores --endtime and --starttime)
   --skipdownload, --no-skipdownload
                         do not download anything
+  --allrecordings, --no-allrecordings
+                        download all recordings saved
+  --cameras CAMERAS     camera IDs to search
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
@@ -71,4 +75,10 @@ For more advanced users, you can specify optional arguments like the start and e
 
 ```bash
 python download.py 192.168.10.239 username password --starttime 2021-09-19T03:00:00+03:00 --endtime 2021-09-20T04:00:00+00:00
+```
+
+Or just specify the cameras that you want to search(be sure to use the HikVision format - 101 for first camera, 201 for the second one...):
+
+```bash
+python download.py 192.168.10.239 username password --cameras=201,301
 ```

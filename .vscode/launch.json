@@ -5,8 +5,19 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
+            "program": "download.py",
+            "console": "integratedTerminal",
+            "args": [
+                "192.168.10.239",
+                "admin",
+                "cosica.123",
+                "--folder",
+                // "--allrecordings",
+                "--skipdownload",
+                "--debug",
+                "--days",
+                "1"
+            ]
         }
     ]
 }

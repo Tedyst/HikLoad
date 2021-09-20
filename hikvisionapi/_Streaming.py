@@ -61,7 +61,7 @@ class _Streaming():
         It is used to get the properties of a particular streaming channel for the
         device
         """
-        return hikvisionapi.deleteXML(self.parent, "Streaming/channels/" + ChannelID)
+        return hikvisionapi.deleteXML(self.parent, "Streaming/channels/%s" % ChannelID)
 
     def getChannelRTSP(self, ChannelID):
         """
@@ -74,29 +74,3 @@ class _Streaming():
             raise hikvisionapi.HikvisionException(
                 "Cannot get RTSP link for this ChannelID")
         return "rtsp://%s:554/Streaming/channels/%s" % (self.parent.address(protocol=False, credentials=True), ChannelID)
-
-    def getPastRecordingsForID(self, ChannelID, startTime="", endTime=""):
-        dictdata = hikvisionapi.xml2dict(b"""<CMSearchDescription version="1.0"
-            xmlns="http://www.isapi.org/ver20/XMLSchema">
-            <searchID></searchID>
-            <trackIDList>
-            <trackID></trackID>
-            </trackIDList>
-            <timeSpanList>
-            <timeSpan>
-            <startTime></startTime>
-            <endTime></endTime>
-            </timeSpan>
-            </timeSpanList>
-            <contentTypeList>
-            <contentType>video</contentType>
-            </contentTypeList>
-            </CMSearchDescription>""")
-        dictdata['CMSearchDescription']['searchID'] = str(uuid.uuid4())
-        dictdata['CMSearchDescription']['trackIDList']['trackID'] = str(
-            ChannelID)
-        (dictdata['CMSearchDescription']['timeSpanList']
-         ['timeSpan']['startTime']) = str(startTime)
-        (dictdata['CMSearchDescription']['timeSpanList']
-         ['timeSpan']['endTime']) = str(endTime)
-        return hikvisionapi.getXML(self.parent, "ContentMgmt/search", data=dictdata)

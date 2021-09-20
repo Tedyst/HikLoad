@@ -43,6 +43,10 @@ def parse_args():
                         help='download videos for the last X days (ignores --endtime and --starttime)')
     parser.add_argument('--skipdownload', dest="skipdownload", action=argparse.BooleanOptionalAction,
                         help='do not download anything')
+    parser.add_argument('--allrecordings', dest="allrecordings", action=argparse.BooleanOptionalAction,
+                        help='download all recordings saved')
+    parser.add_argument('--cameras', dest="cameras", type=lambda s: s.split(","),
+                        help='camera IDs to search')
     args = parser.parse_args()
     return args
 
@@ -68,15 +72,15 @@ def main(args):
     logging.debug(channelList)
     channels = []
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
-        if (int(channel['id']) % 10 == 1):
+        if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
             channels.append(channel['id'])
     logging.info("Found channels %s" % channels)
 
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
         cname = channel['channelName']
         cid = channel['id']
-        # The channel is a primary channel
-        if (int(cid) % 10 == 1):
+        # The channel is a primary channel and is allowed to be used for recording
+        if (int(cid) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
             if args.days:
                 endtime = datetime.now().replace(
                     hour=23, minute=59, second=59, microsecond=0)
@@ -95,11 +99,16 @@ def main(args):
             logging.debug("Using %s and %s as start and end times" %
                           (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
-            recordings = server.Streaming.getPastRecordingsForID(
-                cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
-            logging.debug(recordings)
-            logging.info("Found %s recordings for channel %s" %
-                         (recordings['CMSearchResult']['numOfMatches'], cname))
+            if args.allrecordings:
+                recordings = server.ContentMgmt.search.getAllRecordingsForID(
+                    cid)
+                logging.info("There are %s recordings in total for channel %s" %
+                             (server.ContentMgmt.search.getAllRecordingsForID(cid)['CMSearchResult']['numOfMatches'], cid))
+            else:
+                recordings = server.ContentMgmt.search.getPastRecordingsForID(
+                    cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
+                logging.info("Found %s recordings for channel %s" %
+                             (recordings['CMSearchResult']['numOfMatches'], cid))
 
             # If we didn't have any recordings for this channel, skip it
             if int(recordings['CMSearchResult']['numOfMatches']) == 0:

@@ -1,5 +1,6 @@
 from hikvisionapi._System import _System
 from hikvisionapi._Streaming import _Streaming
+from hikvisionapi._ContentMgmt import _ContentMgmt
 
 
 class HikvisionException(Exception):
@@ -24,6 +25,7 @@ class HikvisionServer:
         self.password = password
         self.System = _System(self)
         self.Streaming = _Streaming(self)
+        self.ContentMgmt = _ContentMgmt(self)
 
     def __repr__(self) -> str:
         return "%s(host=%s, protocol=%s, user=%s)" % (self.__class__.__name__, self.host, self.protocol, self.user)

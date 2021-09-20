@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 from io import BytesIO
 from typing import Union
+import copy
 
 import requests
 from lxml import etree
@@ -316,8 +317,10 @@ def dict2xml(dictionary: dict) -> str:
     Returns:
         xml (string): The XML string
     """
-    for i in dictionary:
-        dictionary[i]["@attrs"].update(
+    # Keep the original dictionary intact, in case it needs to be modified
+    temp = copy.deepcopy(dictionary)
+    for i in temp:
+        temp[i]["@attrs"].update(
             {"xmlns": "http://www.hikvision.com/ver20/XMLSchema"})
-    xml = d2xml(dictionary)
+    xml = d2xml(temp)
     return """<?xml version = "1.0" encoding = "UTF-8" ?>""" + str(xml)
