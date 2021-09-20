@@ -17,17 +17,30 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
     """
     logging.info("Starting download from: " + url)
     try:
-        stream = ffmpeg.input(
-            url,
-            rtsp_transport="tcp",
-            stimeout=1,
-            t=seconds,
-        )
-        stream = ffmpeg.output(
-            stream,
-            videoName,
-            ss=skipSeconds
-        )
+        if seconds:
+            stream = ffmpeg.input(
+                url,
+                rtsp_transport="tcp",
+                stimeout=1,
+                t=seconds,
+            )
+        else:
+            stream = ffmpeg.input(
+                url,
+                rtsp_transport="tcp",
+                stimeout=1,
+            )
+        if skipSeconds:
+            stream = ffmpeg.output(
+                stream,
+                videoName,
+                ss=skipSeconds
+            )
+        else:
+            stream = ffmpeg.output(
+                stream,
+                videoName
+            )
     except AttributeError:
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")

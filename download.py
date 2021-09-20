@@ -58,24 +58,25 @@ def run(args):
             os.makedirs(os.path.normpath(args.downloads))
             logging.debug("Created folder %s" % args.downloads)
         else:
-            logging.debug("%s already exists" % args.downloads)
+            logging.debug("Folder %s already exists" % args.downloads)
         os.chdir(os.path.normpath(args.downloads))
 
     logging.debug(channelList)
 
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
+        cname = "CAM 1" + channel['channelName']
         cid = channel['id']
         # The channel is a primary channel
         if (int(cid) % 10 == 1):
-            if not os.path.exists(cid):
-                os.makedirs(os.path.normpath(cid))
-                logging.debug("Created folder %s" % cid)
+            if not os.path.exists(cname):
+                os.makedirs(os.path.normpath(cname))
+                logging.debug("Created folder %s" % cname)
             else:
-                logging.debug("%s already exists" % cid)
+                logging.debug("Folder %s already exists" % cname)
             if args.folders:
-                os.chdir(os.path.normpath(cid))
+                os.chdir(os.path.normpath(cname))
             logging.debug("Using %s and %s as start and end times" %
-                          (args.starttime, args.endtime))
+                          (args.starttime.isoformat(), args.endtime.isoformat()))
 
             recordings = server.Streaming.getPastRecordingsForID(cid, args.starttime.isoformat(),
                                                                  args.endtime.isoformat())
@@ -104,6 +105,7 @@ def run(args):
                     name = "%s-%s.%s" % (name, cid, args.videoformat)
 
                 logging.info("Started downloading %s" % name)
+                logging.debug("url: %r, name: %r" % (url, name))
                 if args.frames:
                     hikvisionapi.downloadRTSPOnlyFrames(
                         url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
