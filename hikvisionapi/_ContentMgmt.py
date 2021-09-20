@@ -88,7 +88,7 @@ class _search():
             <timeSpanList>
                 <timeSpan>
                     <startTime>2000-01-01T00:00:00Z</startTime>
-                    <endTime>2021-10-10T23:59:59Z</endTime>
+                    <endTime>2037-10-10T23:59:59Z</endTime>
                 </timeSpan>
             </timeSpanList>
             <contentTypeList>
