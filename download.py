@@ -1,3 +1,4 @@
+import collections
 import hikvisionapi
 from datetime import datetime, timedelta, timezone
 import re
@@ -121,7 +122,12 @@ def main(args):
             # This loops from every recording
             recordinglist = recordings['CMSearchResult']['matchList']
             for recording in recordinglist['searchMatchItem']:
-                url = recording['mediaSegmentDescriptor']['playbackURI']
+                mediasegment = recording['mediaSegmentDescriptor']
+                if type(mediasegment) is not collections.OrderedDict:
+                    logging.error(
+                        "HikVision dosen't apparently like to return correct XML data...")
+                    continue
+                url = mediasegment['playbackURI']
                 url = url.replace(server.host, server.address(
                     protocol=False, credentials=True))
                 # You can choose your own filename, this is just an example
@@ -130,7 +136,7 @@ def main(args):
                         recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
                     delta = datetime.now(
                         timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
-                    date = date - delta
+                    date = date + delta
                     name = re.sub(r'[-T\:Z]', '', date.isoformat())
                 else:
                     name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
