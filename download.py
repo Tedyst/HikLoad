@@ -1,5 +1,5 @@
 import hikvisionapi
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 import os
 import logging
@@ -47,6 +47,8 @@ def parse_args():
                         help='download all recordings saved')
     parser.add_argument('--cameras', dest="cameras", type=lambda s: s.split(","),
                         help='camera IDs to search (example: --cameras=201,301)')
+    parser.add_argument('--localtimefilenames', dest="localtimefilenames", action=argparse.BooleanOptionalAction,
+                        help='save filenames using date in local time instead of UTC')
     args = parser.parse_args()
     return args
 
@@ -123,9 +125,16 @@ def main(args):
                 url = url.replace(server.host, server.address(
                     protocol=False, credentials=True))
                 # You can choose your own filename, this is just an example
-                # This line strips the timezone from the time retuned by the server
-                name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
-                              ['startTime'])
+                if args.localtimefilenames:
+                    date = datetime.strptime(
+                        recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                    delta = datetime.now(
+                        timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
+                    date = date - delta
+                    name = re.sub(r'[-T\:Z]', '', date.isoformat())
+                else:
+                    name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
+                                  ['startTime'])
                 # This line appends the camera id and the extension to the filename
                 if args.folders:
                     name = "%s.%s" % (name, args.videoformat)
