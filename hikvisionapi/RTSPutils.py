@@ -15,7 +15,7 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
         force (bool): Forces saving of file (default is False)
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
     """
-    logging.info("Starting download from: " + url)
+    logging.debug("Starting download from: %s" % url)
     try:
         if seconds:
             stream = ffmpeg.input(
@@ -73,7 +73,7 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
         raise Exception("videoName cannot be formatted correctly")
     if modulo <= 0:
         raise Exception("modulo is not valid")
-    logging.info("Trying to download from %s" % url)
+    logging.debug("Starting download from: %s" % url)
     try:
         stream = ffmpeg.input(
             url,

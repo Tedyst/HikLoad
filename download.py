@@ -1,5 +1,5 @@
 import hikvisionapi
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 import re
 import os
 import logging
@@ -39,6 +39,8 @@ def parse_args():
                         help='skip first X seconds for each video (default: 0)')
     parser.add_argument('--seconds', dest="seconds", type=int,
                         help='save only X seconds for each video (default: inf)')
+    parser.add_argument('--days', dest="days", type=int,
+                        help='download videos for the last X days (ignores --endtime and --starttime)')
     args = parser.parse_args()
     return args
 
@@ -53,6 +55,10 @@ def run(args):
     else:
         logging.getLogger().setLevel(logging.INFO)
 
+    if args.days and (args.endtime or args.starttime):
+        raise Exception(
+            "--days and (--starttime or --endtime) is not supported")
+
     if args.downloads:
         if not os.path.exists(args.downloads):
             os.makedirs(os.path.normpath(args.downloads))
@@ -64,10 +70,18 @@ def run(args):
     logging.debug(channelList)
 
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
-        cname = "CAM 1" + channel['channelName']
+        cname = channel['channelName']
         cid = channel['id']
         # The channel is a primary channel
         if (int(cid) % 10 == 1):
+            if args.days:
+                endtime = datetime.now().replace(
+                    hour=23, minute=59, second=59, microsecond=0)
+                starttime = endtime - timedelta(days=args.days)
+            else:
+                starttime = args.starttime
+                endtime = args.endtime
+
             if not os.path.exists(cname):
                 os.makedirs(os.path.normpath(cname))
                 logging.debug("Created folder %s" % cname)
@@ -76,14 +90,15 @@ def run(args):
             if args.folders:
                 os.chdir(os.path.normpath(cname))
             logging.debug("Using %s and %s as start and end times" %
-                          (args.starttime.isoformat(), args.endtime.isoformat()))
+                          (starttime, endtime))
 
-            recordings = server.Streaming.getPastRecordingsForID(cid, args.starttime.isoformat(),
-                                                                 args.endtime.isoformat())
+            recordings = server.Streaming.getPastRecordingsForID(
+                cid, starttime.isoformat(), endtime.isoformat())
 
             # If we didn't have any recordings for this channel, skip it
             if int(recordings['CMSearchResult']['numOfMatches']) == 0:
-                logging.info("Could not find any videos for camera %s" % cid)
+                logging.warning(
+                    "Could not find any videos for camera %s" % cid)
                 if args.folders:
                     os.chdir("..")
                 continue
