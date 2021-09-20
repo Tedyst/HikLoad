@@ -55,10 +55,6 @@ def run(args):
     else:
         logging.getLogger().setLevel(logging.INFO)
 
-    if args.days and (args.endtime or args.starttime):
-        raise Exception(
-            "--days and (--starttime or --endtime) is not supported")
-
     if args.downloads:
         if not os.path.exists(args.downloads):
             os.makedirs(os.path.normpath(args.downloads))
@@ -90,7 +86,7 @@ def run(args):
             if args.folders:
                 os.chdir(os.path.normpath(cname))
             logging.debug("Using %s and %s as start and end times" %
-                          (starttime, endtime))
+                          (starttime.isoformat(), endtime.isoformat()))
 
             recordings = server.Streaming.getPastRecordingsForID(
                 cid, starttime.isoformat(), endtime.isoformat())
