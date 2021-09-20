@@ -6,7 +6,7 @@ To use your own DVR it is usually only needed to change the arguments for the sc
 
 ```
 usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders | --no-folders] [--debug | --no-debug] [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS]
-                   [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS]
+                   [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS] [--skipdownload | --no-skipdownload]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -33,6 +33,9 @@ optional arguments:
   --skipseconds SKIPSECONDS
                         skip first X seconds for each video (default: 0)
   --seconds SECONDS     save only X seconds for each video (default: inf)
+  --days DAYS           download videos for the last X days (ignores --endtime and --starttime)
+  --skipdownload, --no-skipdownload
+                        do not download anything
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
