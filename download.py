@@ -93,10 +93,10 @@ def main(args):
             if args.folders:
                 os.chdir(os.path.normpath(cname))
             logging.debug("Using %s and %s as start and end times" %
-                          (starttime.isoformat(), endtime.isoformat()))
+                          (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
             recordings = server.Streaming.getPastRecordingsForID(
-                cid, starttime.isoformat(), endtime.isoformat())
+                cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
             logging.debug(recordings)
             logging.info("Found %s recordings for channel %s" %
                          (recordings['CMSearchResult']['numOfMatches'], cname))
