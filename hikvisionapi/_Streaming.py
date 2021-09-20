@@ -1,4 +1,5 @@
 import hikvisionapi
+import uuid
 
 
 class _Streaming():
@@ -77,7 +78,7 @@ class _Streaming():
     def getPastRecordingsForID(self, ChannelID, startTime="", endTime=""):
         dictdata = hikvisionapi.xml2dict(b"""<CMSearchDescription version="1.0"
             xmlns="http://www.isapi.org/ver20/XMLSchema">
-            <searchID>{812F04E0-4089-11A3-9A0C-0305E82C2906}</searchID>
+            <searchID></searchID>
             <trackIDList>
             <trackID></trackID>
             </trackIDList>
@@ -90,9 +91,10 @@ class _Streaming():
             <contentTypeList>
             <contentType>video</contentType>
             </contentTypeList>
-            <maxResults>100</maxResults>
             </CMSearchDescription>""")
-        dictdata['CMSearchDescription']['trackIDList']['trackID'] = ChannelID
+        dictdata['CMSearchDescription']['searchID'] = str(uuid.uuid4())
+        dictdata['CMSearchDescription']['trackIDList']['trackID'] = str(
+            ChannelID)
         (dictdata['CMSearchDescription']['timeSpanList']
          ['timeSpan']['startTime']) = startTime
         (dictdata['CMSearchDescription']['timeSpanList']

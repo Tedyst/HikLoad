@@ -41,11 +41,13 @@ def parse_args():
                         help='save only X seconds for each video (default: inf)')
     parser.add_argument('--days', dest="days", type=int,
                         help='download videos for the last X days (ignores --endtime and --starttime)')
+    parser.add_argument('--skipdownload', dest="skipdownload", action=argparse.BooleanOptionalAction,
+                        help='do not download anything')
     args = parser.parse_args()
     return args
 
 
-def run(args):
+def main(args):
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password)
 
@@ -64,6 +66,11 @@ def run(args):
         os.chdir(os.path.normpath(args.downloads))
 
     logging.debug(channelList)
+    channels = []
+    for channel in channelList['StreamingChannelList']['StreamingChannel']:
+        if (int(channel['id']) % 10 == 1):
+            channels.append(channel['id'])
+    logging.info("Found channels %s" % channels)
 
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
         cname = channel['channelName']
@@ -90,11 +97,12 @@ def run(args):
 
             recordings = server.Streaming.getPastRecordingsForID(
                 cid, starttime.isoformat(), endtime.isoformat())
+            logging.debug(recordings)
+            logging.info("Found %s recordings for channel %s" %
+                         (recordings['CMSearchResult']['numOfMatches'], cname))
 
             # If we didn't have any recordings for this channel, skip it
             if int(recordings['CMSearchResult']['numOfMatches']) == 0:
-                logging.warning(
-                    "Could not find any videos for camera %s" % cid)
                 if args.folders:
                     os.chdir("..")
                 continue
@@ -115,18 +123,19 @@ def run(args):
                 else:
                     name = "%s-%s.%s" % (name, cid, args.videoformat)
 
-                logging.info("Started downloading %s" % name)
-                logging.debug("url: %r, name: %r" % (url, name))
-                if args.frames:
-                    hikvisionapi.downloadRTSPOnlyFrames(
-                        url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
-                hikvisionapi.downloadRTSP(
-                    url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
-                logging.info("Finished downloading %s" % name)
+                if not args.skipdownload:
+                    logging.info("Started downloading %s" % name)
+                    logging.debug("url: %r, name: %r" % (url, name))
+                    if args.frames:
+                        hikvisionapi.downloadRTSPOnlyFrames(
+                            url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
+                    hikvisionapi.downloadRTSP(
+                        url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
+                    logging.info("Finished downloading %s" % name)
             if args.folders:
                 os.chdir("..")
 
 
 if __name__ == '__main__':
     args = parse_args()
-    run(args)
+    main(args)
