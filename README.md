@@ -5,9 +5,9 @@ A collection of short Python scripts that utilize the ISAPI specification for Hi
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
 
 ```
-usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders | --no-folders] [--debug | --no-debug] [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS]
-                   [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS] [--skipdownload | --no-skipdownload]
-                   [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
+usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders | --no-folders] [--debug | --no-debug] [--videoformat VIDEOFORMAT]
+                   [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS]
+                   [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -39,7 +39,7 @@ optional arguments:
                         do not download anything
   --allrecordings, --no-allrecordings
                         download all recordings saved
-  --cameras CAMERAS     camera IDs to search
+  --cameras CAMERAS     camera IDs to search (example: --cameras=201,301)
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.

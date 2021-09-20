@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--allrecordings', dest="allrecordings", action=argparse.BooleanOptionalAction,
                         help='download all recordings saved')
     parser.add_argument('--cameras', dest="cameras", type=lambda s: s.split(","),
-                        help='camera IDs to search')
+                        help='camera IDs to search (example: --cameras=201,301)')
     args = parser.parse_args()
     return args
 
