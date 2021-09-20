@@ -1,11 +1,6 @@
 # HikLoad
 
-A collection of short Python scripts that utilize the ISAPI specification for Hikvision DVR/NVRs.
-
-`downloadTodayRecordings.py` downloads video recordings from the day that this script is run
-`downloadTodayRecordingsAsFrames.py` downloads video recordings from the day that this script is run and saves every 10th frame
-
-## Modifying the config
+A collection of short Python scripts that utilize the ISAPI specification for Hikvision DVR/NVRs/Cameras.
 
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
 
