@@ -128,60 +128,54 @@ def main(args):
             # This loops from every recording
             recordinglist = recordings['CMSearchResult']['matchList']
             for recording in recordinglist['searchMatchItem']:
-                if 'mediaSegmentDescriptor' not in recording:
-                    logging.error(
-                        "HikVision dosen't apparently like to return correct XML data...")
-                    logging.error("recording = %s" % recording)
-                    continue
-                mediasegment = recording['mediaSegmentDescriptor']
-                if 'playbackURI' not in mediasegment:
-                    logging.error(
-                        "HikVision dosen't apparently like to return correct XML data...")
-                    logging.error("mediasegment = %s" % mediasegment)
-                    continue
-                url = mediasegment['playbackURI']
-                url = url.replace(server.host, server.address(
-                    protocol=False, credentials=True))
-
-                recording_time = datetime.strptime(
-                    recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                if args.folders:
-                    create_foler_and_chdir(cname)
-                    if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
-                        create_foler_and_chdir(recording_time.year)
-                        if args.folders in ["onepermonth", "oneperday"]:
-                            create_foler_and_chdir(recording_time.month)
-                            if args.folders in ["oneperday"]:
-                                create_foler_and_chdir(recording_time.day)
-
-                # You can choose your own filename, this is just an example
-                if args.localtimefilenames:
-                    date = datetime.strptime(
+                try:
+                    url = recording['mediaSegmentDescriptor']['playbackURI']
+                    url = url.replace(server.host, server.address(
+                        protocol=False, credentials=True))
+                    recording_time = datetime.strptime(
                         recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                    delta = datetime.now(
-                        timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
-                    date = date + delta
-                    name = re.sub(r'[-T\:Z]', '', date.isoformat())
-                else:
-                    name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
-                                  ['startTime'])
-                # This line appends the camera id and the extension to the filename
-                if args.folders:
-                    name = "%s.%s" % (name, args.videoformat)
-                else:
-                    name = "%s-%s.%s" % (name, cid, args.videoformat)
+                    if args.folders:
+                        create_foler_and_chdir(cname)
+                        if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+                            create_foler_and_chdir(recording_time.year)
+                            if args.folders in ["onepermonth", "oneperday"]:
+                                create_foler_and_chdir(recording_time.month)
+                                if args.folders in ["oneperday"]:
+                                    create_foler_and_chdir(recording_time.day)
 
-                if not args.skipdownload:
-                    logging.info("Started downloading %s" % name)
-                    logging.debug("url: %r, name: %r" % (url, name))
-                    if args.frames:
-                        hikvisionapi.downloadRTSPOnlyFrames(
-                            url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
-                    hikvisionapi.downloadRTSP(
-                        url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
-                    logging.info("Finished downloading %s" % name)
-                if args.folders:
-                    os.chdir(original_path)
+                    # You can choose your own filename, this is just an example
+                    if args.localtimefilenames:
+                        date = datetime.strptime(
+                            recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                        delta = datetime.now(
+                            timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
+                        date = date + delta
+                        name = re.sub(r'[-T\:Z]', '', date.isoformat())
+                    else:
+                        name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
+                                      ['startTime'])
+                    # This line appends the camera id and the extension to the filename
+                    if args.folders:
+                        name = "%s.%s" % (name, args.videoformat)
+                    else:
+                        name = "%s-%s.%s" % (name, cid, args.videoformat)
+
+                    if not args.skipdownload:
+                        logging.info("Started downloading %s" % name)
+                        logging.debug("url: %r, name: %r" % (url, name))
+                        if args.frames:
+                            hikvisionapi.downloadRTSPOnlyFrames(
+                                url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
+                        hikvisionapi.downloadRTSP(
+                            url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
+                        logging.info("Finished downloading %s" % name)
+                    if args.folders:
+                        os.chdir(original_path)
+                except TypeError as e:
+                    logging.error(
+                        "HikVision dosen't apparently like to return correct XML data...")
+                    logging.error(repr(e))
+                    logging.error(recording)
 
 
 if __name__ == '__main__':
