@@ -56,6 +56,50 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
+def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mkv"):
+    """Downloads an RTSP livestream from url to videoName.
+
+    Parameters:
+        videoName (str): the filename of the downloaded stream
+        seconds (int): the maximum number of seconds that should be recorded (default is 999999)
+        debug (bool): Enables debug logging (default is False)
+        force (bool): Forces saving of file (default is False)
+        skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
+    """
+    if skipSeconds == None and seconds == None:
+        return
+    if skipSeconds == 0 and seconds == 9999999:
+        return
+    logging.debug("Starting processing %s" % videoName)
+    try:
+        if seconds:
+            stream = ffmpeg.input(
+                videoName,
+                t=seconds,
+            )
+        else:
+            stream = ffmpeg.input(videoName)
+        newname = "%s-edited.%s" % (videoName.replace('.mkv', ''), fileFormat)
+        if skipSeconds:
+            stream = ffmpeg.output(
+                stream,
+                newname,
+                ss=skipSeconds,
+                force=True
+            )
+        else:
+            stream = ffmpeg.output(
+                stream,
+                newname,
+            )
+    except AttributeError:
+        raise Exception(
+            "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
+    if not debug:
+        return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True, overwrite_output=True)
+    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False, overwrite_output=True)
+
+
 def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int = 9999999, debug: bool = False, force: bool = False, skipSeconds: int = 0):
     """Downloads an image for every `modulo` frame from an url and saves it to videoName.
 

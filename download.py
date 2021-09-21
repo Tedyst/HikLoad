@@ -52,6 +52,8 @@ def parse_args():
                         help='save filenames using date in local time instead of UTC')
     parser.add_argument('--yesterday', dest="yesterday", action=argparse.BooleanOptionalAction,
                         help='download yesterday\'s videos')
+    parser.add_argument('--ffmpeg', dest="ffmpeg", action=argparse.BooleanOptionalAction,
+                        help='enable ffmpeg and disable downloading directly from server')
     args = parser.parse_args()
     return args
 
@@ -78,6 +80,7 @@ def main(args):
 
     if args.downloads:
         create_foler_and_chdir(args.downloads)
+    original_path = os.path.abspath(os.getcwd())
 
     logging.debug(channelList)
     channels = []
@@ -102,8 +105,6 @@ def main(args):
             else:
                 starttime = args.starttime
                 endtime = args.endtime
-
-            original_path = os.path.abspath(os.getcwd())
 
             logging.debug("Using %s and %s as start and end times" %
                           (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
@@ -130,8 +131,6 @@ def main(args):
             for recording in recordinglist['searchMatchItem']:
                 try:
                     url = recording['mediaSegmentDescriptor']['playbackURI']
-                    url = url.replace(server.host, server.address(
-                        protocol=False, credentials=True))
                     recording_time = datetime.strptime(
                         recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
                     if args.folders:
@@ -164,10 +163,24 @@ def main(args):
                         logging.info("Started downloading %s" % name)
                         logging.debug("url: %r, name: %r" % (url, name))
                         if args.frames:
+                            url = url.replace(server.host, server.address(
+                                protocol=False, credentials=True))
                             hikvisionapi.downloadRTSPOnlyFrames(
                                 url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
-                        hikvisionapi.downloadRTSP(
-                            url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
+                        if args.ffmpeg:
+                            try:
+                                url = url.replace(server.host, server.address(
+                                    protocol=False, credentials=True))
+                                hikvisionapi.downloadRTSP(
+                                    url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
+                            except:
+                                logging.error(
+                                    "Could not download %s. Try to remove --fmpeg." % name)
+                        else:
+                            r = server.ContentMgmt.search.downloadURI(url)
+                            open(name, 'wb').write(r.content)
+                            hikvisionapi.processSavedVideo(
+                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds)
                         logging.info("Finished downloading %s" % name)
                     if args.folders:
                         os.chdir(original_path)

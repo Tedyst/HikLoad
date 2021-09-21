@@ -16,6 +16,9 @@ class _search():
         """
         return hikvisionapi.getXML(self.parent, "ContentMgmt/search/profile")
 
+    def getRaw(self, data: dict):
+        return hikvisionapi.postXML(self.parent, "ContentMgmt/search", data=data)
+
     def get(self, data: dict):
         # TODO: This is a hack, since the server likes to return a limited number of results
         result = hikvisionapi.postXML(
@@ -50,6 +53,19 @@ class _search():
             original['CMSearchResult']['matchList']['searchMatchItem'])
         original['CMSearchResult']['responseStatusStrg'] = "OK"
         return original
+
+    def download(self, data: dict):
+        result = hikvisionapi.getXML(self.parent, "ContentMgmt/download",
+                                     data=data, rawResponse=True)
+        return result
+
+    def downloadURI(self, playbackURI):
+        dictdata = hikvisionapi.xml2dict(b"""<downloadRequest>
+        <playbackURI></playbackURI>
+        </downloadRequest>
+        """)
+        dictdata['downloadRequest']['playbackURI'] = playbackURI
+        return self.download(dictdata)
 
     def getPastRecordingsForID(self, ChannelID, startTime="", endTime=""):
         dictdata = hikvisionapi.xml2dict(b"""<CMSearchDescription version="1.0"

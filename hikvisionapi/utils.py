@@ -11,7 +11,7 @@ from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
 
 
-def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, rawResponse: bool = False) -> dict:
     """This returns the response of the DVR to the following GET request
 
     Parameters:
@@ -27,6 +27,8 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     if data:
         tosend = dict2xml(data)
     logging.debug("Data sent: %s" % tosend)
+    if rawResponse:
+        return getXMLRaw(server, path, xmldata=tosend, rawResponse=True)
     response = xml2dict(getXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -40,7 +42,7 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     return response
 
 
-def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
+def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None, rawResponse: bool = False) -> dict:
     """
     This returns the response of the DVR to the following GET request
 
@@ -64,6 +66,8 @@ def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
             data=xmldata,
             headers=headers,
             auth=HTTPDigestAuth(server.user, server.password))
+    if rawResponse:
+        return responseRaw
     responseXML = responseRaw.text
     return responseXML
 

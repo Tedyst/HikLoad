@@ -8,7 +8,7 @@ To use your own DVR it is usually only needed to change the arguments for the sc
 usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug]
                    [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS]
                    [--days DAYS] [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
-                   [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday]
+                   [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -45,6 +45,8 @@ optional arguments:
                         save filenames using date in local time instead of UTC
   --yesterday, --no-yesterday
                         download yesterday's videos
+  --ffmpeg, --no-ffmpeg
+                        enable ffmpeg and disable downloading directly from server
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
