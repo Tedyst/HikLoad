@@ -77,6 +77,8 @@ def main(args):
         logging.getLogger().setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.INFO)
+    logging.debug("ContentMgmt profile: %s" %
+                  server.ContentMgmt.search.profile())
 
     if args.downloads:
         create_foler_and_chdir(args.downloads)

@@ -66,10 +66,11 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         force (bool): Forces saving of file (default is False)
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
     """
-    if skipSeconds == None and seconds == None:
-        return
-    if skipSeconds == 0 and seconds == 9999999:
-        return
+    if fileFormat == "mkv":
+        if skipSeconds == None and seconds == None:
+            return
+        if skipSeconds == 0 and seconds == 9999999:
+            return
     logging.debug("Starting processing %s" % videoName)
     try:
         if seconds:
