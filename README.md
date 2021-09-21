@@ -5,10 +5,10 @@ A collection of short Python scripts that utilize the ISAPI specification for Hi
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
 
 ```
-usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders | --no-folders] [--debug | --no-debug] [--videoformat VIDEOFORMAT]
-                   [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS]
-                   [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
-                   [--localtimefilenames | --no-localtimefilenames]
+usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug]
+                   [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS]
+                   [--days DAYS] [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
+                   [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -23,8 +23,8 @@ optional arguments:
   --starttime STARTTIME
                         the start time in ISO format (default: today at 00:00:00, local time)
   --endtime ENDTIME     the start time in ISO format (default: today at 23:59:59, local time)
-  --folders, --no-folders
-                        create a separate folder per camera (default: false)
+  --folders {onepercamera,oneperday,onepermonth,oneperyear}
+                        create a separate folder per camera/duration (default: disabled)
   --debug, --no-debug   enable debug mode (default: false)
   --videoformat VIDEOFORMAT
                         specify video format (default: mkv)
@@ -43,6 +43,8 @@ optional arguments:
   --cameras CAMERAS     camera IDs to search (example: --cameras=201,301)
   --localtimefilenames, --no-localtimefilenames
                         save filenames using date in local time instead of UTC
+  --yesterday, --no-yesterday
+                        download yesterday's videos
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
