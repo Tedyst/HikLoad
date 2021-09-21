@@ -84,8 +84,7 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
             stream = ffmpeg.output(
                 stream,
                 newname,
-                ss=skipSeconds,
-                force=True
+                ss=skipSeconds
             )
         else:
             stream = ffmpeg.output(
@@ -96,8 +95,13 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     if not debug:
-        return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True, overwrite_output=True)
-    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False, overwrite_output=True)
+        ffmpeg.run(stream, capture_stdout=True,
+                   capture_stderr=True, overwrite_output=True)
+    else:
+        ffmpeg.run(stream, capture_stdout=False,
+                   capture_stderr=False, overwrite_output=True)
+    os.remove(videoName)
+    os.rename(newname, videoName)
 
 
 def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int = 9999999, debug: bool = False, force: bool = False, skipSeconds: int = 0):

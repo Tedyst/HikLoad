@@ -180,7 +180,7 @@ def main(args):
                             r = server.ContentMgmt.search.downloadURI(url)
                             open(name, 'wb').write(r.content)
                             hikvisionapi.processSavedVideo(
-                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds)
+                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds, fileFormat=args.videoformat)
                         logging.info("Finished downloading %s" % name)
                     if args.folders:
                         os.chdir(original_path)
