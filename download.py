@@ -24,8 +24,8 @@ def parse_args():
                         default=datetime.now().replace(
                             hour=23, minute=59, second=59, microsecond=0).isoformat(),
                         help='the start time in ISO format (default: today at 23:59:59, local time)')
-    parser.add_argument('--folders', action=argparse.BooleanOptionalAction, dest="folders",
-                        help='create a separate folder per camera (default: false)')
+    parser.add_argument('--folders', type=str, dest="folders", choices=['onepercamera', 'oneperday', 'onepermonth', 'oneperyear'],
+                        help='create a separate folder per camera/duration (default: disabled)')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, dest="debug",
                         help='enable debug mode (default: false)')
     parser.add_argument('--videoformat', dest="videoformat", default="mkv",
@@ -50,8 +50,20 @@ def parse_args():
                         help='camera IDs to search (example: --cameras=201,301)')
     parser.add_argument('--localtimefilenames', dest="localtimefilenames", action=argparse.BooleanOptionalAction,
                         help='save filenames using date in local time instead of UTC')
+    parser.add_argument('--yesterday', dest="yesterday", action=argparse.BooleanOptionalAction,
+                        help='download yesterday\'s videos')
     args = parser.parse_args()
     return args
+
+
+def create_foler_and_chdir(dir):
+    path = str(dir)
+    if not os.path.exists(path):
+        os.makedirs(os.path.normpath(path))
+        logging.debug("Created folder %s" % path)
+    else:
+        logging.debug("Folder %s already exists" % path)
+    os.chdir(os.path.normpath(path))
 
 
 def main(args):
@@ -65,12 +77,7 @@ def main(args):
         logging.getLogger().setLevel(logging.INFO)
 
     if args.downloads:
-        if not os.path.exists(args.downloads):
-            os.makedirs(os.path.normpath(args.downloads))
-            logging.debug("Created folder %s" % args.downloads)
-        else:
-            logging.debug("Folder %s already exists" % args.downloads)
-        os.chdir(os.path.normpath(args.downloads))
+        create_foler_and_chdir(args.downloads)
 
     logging.debug(channelList)
     channels = []
@@ -88,17 +95,16 @@ def main(args):
                 endtime = datetime.now().replace(
                     hour=23, minute=59, second=59, microsecond=0)
                 starttime = endtime - timedelta(days=args.days)
+            elif args.yesterday:
+                endtime = datetime.now().replace(
+                    hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+                starttime = endtime - timedelta(days=1)
             else:
                 starttime = args.starttime
                 endtime = args.endtime
 
-            if not os.path.exists(cname):
-                os.makedirs(os.path.normpath(cname))
-                logging.debug("Created folder %s" % cname)
-            else:
-                logging.debug("Folder %s already exists" % cname)
-            if args.folders:
-                os.chdir(os.path.normpath(cname))
+            original_path = os.path.abspath(os.getcwd())
+
             logging.debug("Using %s and %s as start and end times" %
                           (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
@@ -116,20 +122,38 @@ def main(args):
             # If we didn't have any recordings for this channel, skip it
             if int(recordings['CMSearchResult']['numOfMatches']) == 0:
                 if args.folders:
-                    os.chdir("..")
+                    os.chdir(original_path)
                 continue
 
             # This loops from every recording
             recordinglist = recordings['CMSearchResult']['matchList']
             for recording in recordinglist['searchMatchItem']:
-                mediasegment = recording['mediaSegmentDescriptor']
-                if type(mediasegment) is not collections.OrderedDict:
+                if 'mediaSegmentDescriptor' not in recording:
                     logging.error(
                         "HikVision dosen't apparently like to return correct XML data...")
+                    logging.error("recording = %s" % recording)
+                    continue
+                mediasegment = recording['mediaSegmentDescriptor']
+                if 'playbackURI' not in mediasegment:
+                    logging.error(
+                        "HikVision dosen't apparently like to return correct XML data...")
+                    logging.error("mediasegment = %s" % mediasegment)
                     continue
                 url = mediasegment['playbackURI']
                 url = url.replace(server.host, server.address(
                     protocol=False, credentials=True))
+
+                recording_time = datetime.strptime(
+                    recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                if args.folders:
+                    create_foler_and_chdir(cname)
+                    if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+                        create_foler_and_chdir(recording_time.year)
+                        if args.folders in ["onepermonth", "oneperday"]:
+                            create_foler_and_chdir(recording_time.month)
+                            if args.folders in ["oneperday"]:
+                                create_foler_and_chdir(recording_time.day)
+
                 # You can choose your own filename, this is just an example
                 if args.localtimefilenames:
                     date = datetime.strptime(
@@ -156,8 +180,8 @@ def main(args):
                     hikvisionapi.downloadRTSP(
                         url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
                     logging.info("Finished downloading %s" % name)
-            if args.folders:
-                os.chdir("..")
+                if args.folders:
+                    os.chdir(original_path)
 
 
 if __name__ == '__main__':
