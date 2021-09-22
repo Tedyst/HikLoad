@@ -63,13 +63,13 @@ def main(args):
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password)
 
-    channelList = server.Streaming.getChannels()
     FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(format=FORMAT)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.INFO)
+    channelList = server.Streaming.getChannels()
     logging.debug("ContentMgmt profile: %s" %
                   server.ContentMgmt.search.profile())
 
@@ -77,7 +77,7 @@ def main(args):
         create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
 
-    logging.debug(channelList)
+    logging.debug("ChannelList: %s" % channelList)
     channels = []
     for channel in channelList['StreamingChannelList']['StreamingChannel']:
         if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):

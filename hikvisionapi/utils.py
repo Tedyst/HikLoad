@@ -29,7 +29,8 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logger.debug("Data sent: %s" % tosend)
+    if tosend is not None:
+        logger.debug("Data sent: %s" % tosend)
     if rawResponse:
         return getXMLRaw(server, path, xmldata=tosend, rawResponse=True)
     response = xml2dict(getXMLRaw(server, path, xmldata=tosend))
@@ -90,7 +91,8 @@ def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logger.debug("Data sent: %s" % tosend)
+    if tosend is not None:
+        logger.debug("Data sent: %s" % tosend)
     response = xml2dict(putXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -146,7 +148,8 @@ def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logger.debug("Data sent: %s" % tosend)
+    if tosend is not None:
+        logger.debug("Data sent: %s" % tosend)
     response = xml2dict(deleteXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -204,7 +207,8 @@ def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, 
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logger.debug("Data sent: %s" % tosend)
+    if tosend is not None:
+        logger.debug("Data sent: %s" % tosend)
     response = xml2dict(postXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
