@@ -55,6 +55,8 @@ def parse_args():
                         help='download yesterday\'s videos')
     parser.add_argument('--ffmpeg', dest="ffmpeg", action=argparse.BooleanOptionalAction,
                         help='enable ffmpeg and disable downloading directly from server')
+    parser.add_argument('--forcetranscoding', dest="ffmpeg", action=argparse.BooleanOptionalAction,
+                        help='force transcoding if downloading directly from server')
     args = parser.parse_args()
     return args
 
@@ -176,7 +178,8 @@ def main(args):
                             r = server.ContentMgmt.search.downloadURI(url)
                             open(name, 'wb').write(r.content)
                             hikvisionapi.processSavedVideo(
-                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds, fileFormat=args.videoformat)
+                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
+                                fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
                         logging.info("Finished downloading %s" % name)
                     if args.folders:
                         os.chdir(original_path)

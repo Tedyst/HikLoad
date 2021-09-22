@@ -58,7 +58,7 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
-def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mp4"):
+def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mp4", forceTranscode: bool = False):
     """Downloads an RTSP livestream from url to videoName.
 
     Parameters:
@@ -67,16 +67,18 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         debug (bool): Enables debug logging (default is False)
         force (bool): Forces saving of file (default is False)
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
+        forceTranscode (bool): force the transcoding, even if it is not needed (default is False)
     """
-    if fileFormat == "mp4":
-        if skipSeconds == None and seconds == None:
-            logger.debug(
-                "Skipping processing %s since it is not needed" % videoName)
-            return
-        if skipSeconds == 0 and seconds == 9999999:
-            logger.debug(
-                "Skipping processing %s since it is not needed" % videoName)
-            return
+    if forceTranscode == False:
+        if fileFormat == "mp4":
+            if skipSeconds == None and seconds == None:
+                logger.debug(
+                    "Skipping processing %s since it is not needed" % videoName)
+                return
+            if skipSeconds == 0 and seconds == 9999999:
+                logger.debug(
+                    "Skipping processing %s since it is not needed" % videoName)
+                return
     logger.debug("Starting processing %s" % videoName)
     try:
         if seconds:

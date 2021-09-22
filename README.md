@@ -6,9 +6,9 @@ To use your own DVR it is usually only needed to change the arguments for the sc
 
 ```
 usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug]
-                   [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS]
-                   [--days DAYS] [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
-                   [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg]
+                   [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS]
+                   [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS] [--localtimefilenames | --no-localtimefilenames]
+                   [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg] [--forcetranscoding | --no-forcetranscoding]
                    server username password
 
 Download Recordings from a HikVision server, from a range interval
@@ -47,6 +47,8 @@ optional arguments:
                         download yesterday's videos
   --ffmpeg, --no-ffmpeg
                         enable ffmpeg and disable downloading directly from server
+  --forcetranscoding, --no-forcetranscoding
+                        force transcoding if downloading directly from serve
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
