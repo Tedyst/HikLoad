@@ -72,8 +72,6 @@ def main(args):
     else:
         logging.getLogger().setLevel(logging.INFO)
     channelList = server.Streaming.getChannels()
-    logging.debug("ContentMgmt profile: %s" %
-                  server.ContentMgmt.search.profile())
 
     if args.downloads:
         create_folder_and_chdir(args.downloads)
