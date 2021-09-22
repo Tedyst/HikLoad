@@ -171,13 +171,17 @@ def main(args):
                                     url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
                             except:
                                 logging.error(
-                                    "Could not download %s. Try to remove --fmpeg." % name)
+                                    "Could not download %s. Try to remove --fmpeg and --forcetranscoding." % name)
                         else:
                             r = server.ContentMgmt.search.downloadURI(url)
                             open(name, 'wb').write(r.content)
-                            hikvisionapi.processSavedVideo(
-                                name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
-                                fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
+                            try:
+                                hikvisionapi.processSavedVideo(
+                                    name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
+                                    fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
+                            except:
+                                logging.error(
+                                    "Could not download %s. Try to remove --fmpeg and --forcetranscoding." % name)
                         logging.info("Finished downloading %s" % name)
                     if args.folders:
                         os.chdir(original_path)
