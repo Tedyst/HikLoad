@@ -58,7 +58,7 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
     return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
 
 
-def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mkv"):
+def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mp4"):
     """Downloads an RTSP livestream from url to videoName.
 
     Parameters:
@@ -68,7 +68,7 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         force (bool): Forces saving of file (default is False)
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
     """
-    if fileFormat == "mkv":
+    if fileFormat == "mp4":
         if skipSeconds == None and seconds == None:
             logger.debug(
                 "Skipping processing %s since it is not needed" % videoName)
@@ -86,7 +86,7 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
             )
         else:
             stream = ffmpeg.input(videoName)
-        newname = "%s-edited.%s" % (videoName.replace('.mkv', ''), fileFormat)
+        newname = "%s-edited.%s" % (videoName.replace('.mp4', ''), fileFormat)
         if skipSeconds:
             stream = ffmpeg.output(
                 stream,

@@ -29,8 +29,8 @@ def parse_args():
                         help='create a separate folder per camera/duration (default: disabled)')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, dest="debug",
                         help='enable debug mode (default: false)')
-    parser.add_argument('--videoformat', dest="videoformat", default="mkv",
-                        help='specify video format (default: mkv)')
+    parser.add_argument('--videoformat', dest="videoformat", default="mp4",
+                        help='specify video format (default: mp4)')
     parser.add_argument('--downloads', dest="downloads", default="Downloads",
                         help='the downloads folder (default: "Downloads")')
     parser.add_argument('--frames', dest="frames", type=int,

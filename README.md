@@ -27,7 +27,7 @@ optional arguments:
                         create a separate folder per camera/duration (default: disabled)
   --debug, --no-debug   enable debug mode (default: false)
   --videoformat VIDEOFORMAT
-                        specify video format (default: mkv)
+                        specify video format (default: mp4)
   --downloads DOWNLOADS
                         the downloads folder (default: "Downloads")
   --frames FRAMES       save a frame for every X frames in the video (default: false)
