@@ -4,11 +4,14 @@ from collections import OrderedDict
 from io import BytesIO
 from typing import Union
 import copy
+import os
 
 import requests
 from lxml import etree
 from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
+
+logger = logging.getLogger(__name__)
 
 
 def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, rawResponse: bool = False) -> dict:
@@ -26,7 +29,7 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logging.debug("Data sent: %s" % tosend)
+    logger.debug("Data sent: %s" % tosend)
     if rawResponse:
         return getXMLRaw(server, path, xmldata=tosend, rawResponse=True)
     response = xml2dict(getXMLRaw(server, path, xmldata=tosend))
@@ -55,7 +58,7 @@ def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
     """
     headers = {'Content-Type': 'application/xml'}
     if xmldata is None:
-        logging.info("%s/%s" % (server.address(), path))
+        logger.debug("%s/%s" % (server.address(), path))
         responseRaw = requests.get(
             "%s/%s" % (server.address(), path),
             headers=headers,
@@ -87,7 +90,7 @@ def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logging.debug("Data sent: %s" % tosend)
+    logger.debug("Data sent: %s" % tosend)
     response = xml2dict(putXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -143,7 +146,7 @@ def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logging.debug("Data sent: %s" % tosend)
+    logger.debug("Data sent: %s" % tosend)
     response = xml2dict(deleteXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -201,7 +204,7 @@ def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, 
     tosend = xmldata
     if data:
         tosend = dict2xml(data)
-    logging.debug("Data sent: %s" % tosend)
+    logger.debug("Data sent: %s" % tosend)
     response = xml2dict(postXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -328,3 +331,13 @@ def dict2xml(dictionary: dict) -> str:
             {"xmlns": "http://www.hikvision.com/ver20/XMLSchema"})
     xml = d2xml(temp)
     return """<?xml version = "1.0" encoding = "UTF-8" ?>""" + str(xml)
+
+
+def create_folder_and_chdir(dir):
+    path = str(dir)
+    if not os.path.exists(path):
+        os.makedirs(os.path.normpath(path))
+        logger.debug("Created folder %s" % path)
+    else:
+        logger.debug("Folder %s already exists" % path)
+    os.chdir(os.path.normpath(path))

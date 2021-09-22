@@ -2,6 +2,8 @@ import hikvisionapi
 import uuid
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class _search():
     def __init__(self, parent):
@@ -28,7 +30,7 @@ class _search():
         original = result
         while result['CMSearchResult']['responseStatusStrg'] == "MORE":
             if len(result['CMSearchResult']['matchList']) > 0:
-                logging.debug("Using %s as starttime and %s as endtime for the new search" % (
+                logger.debug("Using %s as starttime and %s as endtime for the new search" % (
                     result['CMSearchResult']['matchList']['searchMatchItem'][-1]
                           ['timeSpan']['startTime'],
                     data['CMSearchDescription']
@@ -47,7 +49,7 @@ class _search():
                     original['CMSearchResult']['matchList']['searchMatchItem'].append(
                         i)
             else:
-                logging.error(
+                logger.error(
                     "Server did not return any results, but says that there are MORE?")
         original['CMSearchResult']['numOfMatches'] = len(
             original['CMSearchResult']['matchList']['searchMatchItem'])

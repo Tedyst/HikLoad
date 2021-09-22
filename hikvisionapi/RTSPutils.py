@@ -3,6 +3,8 @@ import ffmpeg
 import os
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool = False, force: bool = False, skipSeconds: bool = 0):
     """Downloads an RTSP livestream from url to videoName.
@@ -15,7 +17,7 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
         force (bool): Forces saving of file (default is False)
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
     """
-    logging.debug("Starting download from: %s" % url)
+    logger.debug("Starting download from: %s" % url)
     try:
         if seconds:
             stream = ffmpeg.input(
@@ -45,10 +47,10 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     if os.path.exists(videoName):
-        logging.debug(
+        logger.debug(
             "The file %s exists, should have been downloaded from %s" % (videoName, url))
         if force is False:
-            logging.warning("%s already exists" % videoName)
+            logger.warning("%s already exists" % videoName)
             return
         os.remove(videoName)
     if not debug:
@@ -68,14 +70,14 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
     """
     if fileFormat == "mkv":
         if skipSeconds == None and seconds == None:
-            logging.debug(
+            logger.debug(
                 "Skipping processing %s since it is not needed" % videoName)
             return
         if skipSeconds == 0 and seconds == 9999999:
-            logging.debug(
+            logger.debug(
                 "Skipping processing %s since it is not needed" % videoName)
             return
-    logging.debug("Starting processing %s" % videoName)
+    logger.debug("Starting processing %s" % videoName)
     try:
         if seconds:
             stream = ffmpeg.input(
@@ -126,7 +128,7 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
         raise Exception("videoName cannot be formatted correctly")
     if modulo <= 0:
         raise Exception("modulo is not valid")
-    logging.debug("Starting download from: %s" % url)
+    logger.debug("Starting download from: %s" % url)
     try:
         stream = ffmpeg.input(
             url,
@@ -145,10 +147,10 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     if os.path.exists(videoName):
-        logging.debug(
+        logger.debug(
             "The file %s exists, should have been downloaded from %s" % (videoName, url))
         if force is False:
-            logging.warning("%s already exists" % videoName)
+            logger.warning("%s already exists" % videoName)
             return
         os.remove(videoName)
     if not debug:

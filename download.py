@@ -1,6 +1,7 @@
 import collections
 import hikvisionapi
 from datetime import datetime, timedelta, timezone
+from hikvisionapi.utils import create_folder_and_chdir
 import re
 import os
 import logging
@@ -58,21 +59,13 @@ def parse_args():
     return args
 
 
-def create_foler_and_chdir(dir):
-    path = str(dir)
-    if not os.path.exists(path):
-        os.makedirs(os.path.normpath(path))
-        logging.debug("Created folder %s" % path)
-    else:
-        logging.debug("Folder %s already exists" % path)
-    os.chdir(os.path.normpath(path))
-
-
 def main(args):
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password)
 
     channelList = server.Streaming.getChannels()
+    FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
+    logging.basicConfig(format=FORMAT)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     else:
@@ -81,7 +74,7 @@ def main(args):
                   server.ContentMgmt.search.profile())
 
     if args.downloads:
-        create_foler_and_chdir(args.downloads)
+        create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
 
     logging.debug(channelList)
@@ -136,13 +129,13 @@ def main(args):
                     recording_time = datetime.strptime(
                         recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
                     if args.folders:
-                        create_foler_and_chdir(cname)
+                        create_folder_and_chdir(cname)
                         if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
-                            create_foler_and_chdir(recording_time.year)
+                            create_folder_and_chdir(recording_time.year)
                             if args.folders in ["onepermonth", "oneperday"]:
-                                create_foler_and_chdir(recording_time.month)
+                                create_folder_and_chdir(recording_time.month)
                                 if args.folders in ["oneperday"]:
-                                    create_foler_and_chdir(recording_time.day)
+                                    create_folder_and_chdir(recording_time.day)
 
                     # You can choose your own filename, this is just an example
                     if args.localtimefilenames:
@@ -163,7 +156,8 @@ def main(args):
 
                     if not args.skipdownload:
                         logging.info("Started downloading %s" % name)
-                        logging.debug("url: %r, name: %r" % (url, name))
+                        logging.debug(
+                            "Files to download: (url: %r, name: %r)" % (url, name))
                         if args.frames:
                             url = url.replace(server.host, server.address(
                                 protocol=False, credentials=True))
@@ -195,4 +189,7 @@ def main(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args)
+    try:
+        main(args)
+    except KeyboardInterrupt:
+        logging.info("Exited by user")
