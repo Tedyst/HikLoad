@@ -68,8 +68,12 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
     """
     if fileFormat == "mkv":
         if skipSeconds == None and seconds == None:
+            logging.debug(
+                "Skipping processing %s since it is not needed" % videoName)
             return
         if skipSeconds == 0 and seconds == 9999999:
+            logging.debug(
+                "Skipping processing %s since it is not needed" % videoName)
             return
     logging.debug("Starting processing %s" % videoName)
     try:
