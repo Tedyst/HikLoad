@@ -48,7 +48,7 @@ optional arguments:
   --ffmpeg, --no-ffmpeg
                         enable ffmpeg and disable downloading directly from server
   --forcetranscoding, --no-forcetranscoding
-                        force transcoding if downloading directly from serve
+                        force transcoding if downloading directly from server
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
