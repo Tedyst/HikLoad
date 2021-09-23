@@ -6,6 +6,7 @@ import re
 import os
 import logging
 import argparse
+import ffmpeg
 
 
 def parse_args():
@@ -55,7 +56,7 @@ def parse_args():
                         help='download yesterday\'s videos')
     parser.add_argument('--ffmpeg', dest="ffmpeg", action=argparse.BooleanOptionalAction,
                         help='enable ffmpeg and disable downloading directly from server')
-    parser.add_argument('--forcetranscoding', dest="ffmpeg", action=argparse.BooleanOptionalAction,
+    parser.add_argument('--forcetranscoding', dest="forcetranscoding", action=argparse.BooleanOptionalAction,
                         help='force transcoding if downloading directly from server')
     args = parser.parse_args()
     return args
@@ -148,40 +149,53 @@ def main(args):
                     else:
                         name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
                                       ['startTime'])
-                    # This line appends the camera id and the extension to the filename
-                    if args.folders:
-                        name = "%s.%s" % (name, args.videoformat)
-                    else:
-                        name = "%s-%s.%s" % (name, cid, args.videoformat)
 
                     if not args.skipdownload:
                         logging.info("Started downloading %s" % name)
                         logging.debug(
                             "Files to download: (url: %r, name: %r)" % (url, name))
                         if args.frames:
-                            url = url.replace(server.host, server.address(
-                                protocol=False, credentials=True))
-                            hikvisionapi.downloadRTSPOnlyFrames(
-                                url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
+                            try:
+                                if args.folders:
+                                    name = "%s.%s" % (name, args.videoformat)
+                                else:
+                                    name = "%s-%s.%s" % (name,
+                                                         cid, args.videoformat)
+                                url = url.replace(server.host, server.address(
+                                    protocol=False, credentials=True))
+                                hikvisionapi.downloadRTSPOnlyFrames(
+                                    url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
+                            except ffmpeg.Error:
+                                logging.error(
+                                    "Could not download %s. Try to remove --frames." % name)
                         if args.ffmpeg:
                             try:
+                                if args.folders:
+                                    name = "%s.%s" % (name, args.videoformat)
+                                else:
+                                    name = "%s-%s.%s" % (name,
+                                                         cid, args.videoformat)
                                 url = url.replace(server.host, server.address(
                                     protocol=False, credentials=True))
                                 hikvisionapi.downloadRTSP(
                                     url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
-                            except:
+                            except ffmpeg.Error:
                                 logging.error(
-                                    "Could not download %s. Try to remove --fmpeg and --forcetranscoding." % name)
+                                    "Could not download %s. Try to remove --fmpeg." % name)
                         else:
+                            if args.folders:
+                                name = "%s.mp4" % name
+                            else:
+                                name = "%s-%s.mp4" % (name, cid)
                             r = server.ContentMgmt.search.downloadURI(url)
                             open(name, 'wb').write(r.content)
                             try:
                                 hikvisionapi.processSavedVideo(
                                     name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
                                     fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
-                            except:
+                            except ffmpeg.Error:
                                 logging.error(
-                                    "Could not download %s. Try to remove --fmpeg and --forcetranscoding." % name)
+                                    "Could not transcode %s. Try to remove --forcetranscoding." % name)
                         logging.info("Finished downloading %s" % name)
                     if args.folders:
                         os.chdir(original_path)
@@ -198,3 +212,4 @@ if __name__ == '__main__':
         main(args)
     except KeyboardInterrupt:
         logging.info("Exited by user")
+        exit(0)
