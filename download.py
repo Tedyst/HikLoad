@@ -70,6 +70,8 @@ def create_folder_and_chdir(dir):
         logging.debug("Created folder %s" % path)
     else:
         logging.debug("Folder %s already exists" % path)
+    if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
+        os.chmod(os.path.normpath(path), 0o777)
     os.chdir(os.path.normpath(path))
 
 
@@ -80,6 +82,8 @@ def photo_download_from_channel(args, server, url, filename, cid):
         "Files to download: (url: %r, name: %r)" % (url, name))
     r = server.ContentMgmt.search.downloadURI(url)
     open(name, 'wb').write(r.content)
+    if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
+        os.chmod(name, 0o777)
     logging.info("Finished downloading %s" % name)
 
 
@@ -123,6 +127,8 @@ def video_download_from_channel(args, server, url, filename, cid):
         except ffmpeg.Error:
             logging.error(
                 "Could not transcode %s. Try to remove --forcetranscoding." % name)
+    if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
+        os.chmod(name, 0o777)
     logging.info("Finished downloading %s" % name)
 
 
