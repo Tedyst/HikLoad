@@ -178,16 +178,20 @@ def main(args):
         logging.debug("Using %s and %s as start and end times" %
                       (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
-        if args.allrecordings:
-            recordings = server.ContentMgmt.search.getAllRecordingsForID(
-                cid)
-            logging.info("There are %s recordings in total for channel %s" %
-                         (recordings['CMSearchResult']['numOfMatches'], cid))
-        else:
-            recordings = server.ContentMgmt.search.getPastRecordingsForID(
-                cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
-            logging.info("Found %s recordings for channel %s" %
-                         (recordings['CMSearchResult']['numOfMatches'], cid))
+        try:
+            if args.allrecordings:
+                recordings = server.ContentMgmt.search.getAllRecordingsForID(
+                    cid)
+                logging.info("There are %s recordings in total for channel %s" %
+                             (recordings['CMSearchResult']['numOfMatches'], cid))
+            else:
+                recordings = server.ContentMgmt.search.getPastRecordingsForID(
+                    cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
+                logging.info("Found %s recordings for channel %s" %
+                             (recordings['CMSearchResult']['numOfMatches'], cid))
+        except hikvisionapi.classes.HikvisionException:
+            logging.error("Could not get recordings for channel %s" % cid)
+            continue
 
         # If we didn't have any recordings for this channel, skip it
         if int(recordings['CMSearchResult']['numOfMatches']) == 0:
