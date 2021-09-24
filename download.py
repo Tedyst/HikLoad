@@ -147,7 +147,9 @@ def main(args):
     channels = []
     if args.photos:
         for channel in channelList['StreamingChannelList']['StreamingChannel']:
-            if (int(channel['id']) % 10 == 3) and (args.cameras is None or channel['id'] in args.cameras):
+            if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
+                # Force looking at the hidden 103 channel for the photos
+                channel['id'] = str(int(channel['id'])+2)
                 channelids.append(channel['id'])
                 channels.append(channel)
         logging.info("Found channels %s" % channelids)
