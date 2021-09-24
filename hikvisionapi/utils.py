@@ -335,13 +335,3 @@ def dict2xml(dictionary: dict) -> str:
             {"xmlns": "http://www.hikvision.com/ver20/XMLSchema"})
     xml = d2xml(temp)
     return """<?xml version = "1.0" encoding = "UTF-8" ?>""" + str(xml)
-
-
-def create_folder_and_chdir(dir):
-    path = str(dir)
-    if not os.path.exists(path):
-        os.makedirs(os.path.normpath(path))
-        logger.debug("Created folder %s" % path)
-    else:
-        logger.debug("Folder %s already exists" % path)
-    os.chdir(os.path.normpath(path))

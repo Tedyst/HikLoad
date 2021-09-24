@@ -1,7 +1,6 @@
 import collections
 import hikvisionapi
 from datetime import datetime, timedelta, timezone
-from hikvisionapi.utils import create_folder_and_chdir
 import re
 import os
 import logging
@@ -58,8 +57,73 @@ def parse_args():
                         help='enable ffmpeg and disable downloading directly from server')
     parser.add_argument('--forcetranscoding', dest="forcetranscoding", action=argparse.BooleanOptionalAction,
                         help='force transcoding if downloading directly from server')
+    parser.add_argument('--photos', dest="photos", action=argparse.BooleanOptionalAction,
+                        help='enable experimental downloading of saved photos')
     args = parser.parse_args()
     return args
+
+
+def create_folder_and_chdir(dir):
+    path = str(dir)
+    if not os.path.exists(path):
+        os.makedirs(os.path.normpath(path))
+        logging.debug("Created folder %s" % path)
+    else:
+        logging.debug("Folder %s already exists" % path)
+    os.chdir(os.path.normpath(path))
+
+
+def photo_download_from_channel(args, server, url, filename, cid):
+    name = "%s.png" % filename
+    logging.info("Started downloading %s" % name)
+    logging.debug(
+        "Files to download: (url: %r, name: %r)" % (url, name))
+    r = server.ContentMgmt.search.downloadURI(url)
+    open(name, 'wb').write(r.content)
+    logging.info("Finished downloading %s" % name)
+
+
+def video_download_from_channel(args, server, url, filename, cid):
+    if args.folders:
+        name = "%s.%s" % (filename, args.videoformat)
+    else:
+        name = "%s-%s.%s" % (filename, cid, args.videoformat)
+    logging.info("Started downloading %s" % name)
+    logging.debug(
+        "Files to download: (url: %r, name: %r)" % (url, name))
+    if args.frames:
+        try:
+            url = url.replace(server.host, server.address(
+                protocol=False, credentials=True))
+            hikvisionapi.downloadRTSPOnlyFrames(
+                url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
+        except ffmpeg.Error:
+            logging.error(
+                "Could not download %s. Try to remove --frames." % name)
+    if args.ffmpeg:
+        try:
+            url = url.replace(server.host, server.address(
+                protocol=False, credentials=True))
+            hikvisionapi.downloadRTSP(
+                url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
+        except ffmpeg.Error:
+            logging.error(
+                "Could not download %s. Try to remove --fmpeg." % name)
+    else:
+        if args.folders:
+            temporaryname = "%s.mp4" % filename
+        else:
+            temporaryname = "%s-%s.mp4" % (filename, cid)
+        r = server.ContentMgmt.search.downloadURI(url)
+        open(temporaryname, 'wb').write(r.content)
+        try:
+            hikvisionapi.processSavedVideo(
+                temporaryname, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
+                fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
+        except ffmpeg.Error:
+            logging.error(
+                "Could not transcode %s. Try to remove --forcetranscoding." % name)
+    logging.info("Finished downloading %s" % name)
 
 
 def main(args):
@@ -79,131 +143,105 @@ def main(args):
     original_path = os.path.abspath(os.getcwd())
 
     logging.debug("ChannelList: %s" % channelList)
+    channelids = []
     channels = []
-    for channel in channelList['StreamingChannelList']['StreamingChannel']:
-        if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
-            channels.append(channel['id'])
-    logging.info("Found channels %s" % channels)
+    if args.photos:
+        for channel in channelList['StreamingChannelList']['StreamingChannel']:
+            if (int(channel['id']) % 10 == 3) and (args.cameras is None or channel['id'] in args.cameras):
+                channelids.append(channel['id'])
+                channels.append(channel)
+        logging.info("Found channels %s" % channelids)
+    else:
+        for channel in channelList['StreamingChannelList']['StreamingChannel']:
+            if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
+                channelids.append(channel['id'])
+                channels.append(channel)
+        logging.info("Found channels %s" % channelids)
 
-    for channel in channelList['StreamingChannelList']['StreamingChannel']:
+    for channel in channels:
         cname = channel['channelName']
         cid = channel['id']
-        # The channel is a primary channel and is allowed to be used for recording
-        if (int(cid) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
-            if args.days:
-                endtime = datetime.now().replace(
-                    hour=23, minute=59, second=59, microsecond=0)
-                starttime = endtime - timedelta(days=args.days)
-            elif args.yesterday:
-                endtime = datetime.now().replace(
-                    hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-                starttime = endtime - timedelta(days=1)
-            else:
-                starttime = args.starttime
-                endtime = args.endtime
+        if args.days:
+            endtime = datetime.now().replace(
+                hour=23, minute=59, second=59, microsecond=0)
+            starttime = endtime - timedelta(days=args.days)
+        elif args.yesterday:
+            endtime = datetime.now().replace(
+                hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+            starttime = endtime - timedelta(days=1)
+        else:
+            starttime = args.starttime
+            endtime = args.endtime
 
-            logging.debug("Using %s and %s as start and end times" %
-                          (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
+        logging.debug("Using %s and %s as start and end times" %
+                      (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
-            if args.allrecordings:
-                recordings = server.ContentMgmt.search.getAllRecordingsForID(
-                    cid)
-                logging.info("There are %s recordings in total for channel %s" %
-                             (server.ContentMgmt.search.getAllRecordingsForID(cid)['CMSearchResult']['numOfMatches'], cid))
-            else:
-                recordings = server.ContentMgmt.search.getPastRecordingsForID(
-                    cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
-                logging.info("Found %s recordings for channel %s" %
-                             (recordings['CMSearchResult']['numOfMatches'], cid))
+        if args.allrecordings:
+            recordings = server.ContentMgmt.search.getAllRecordingsForID(
+                cid)
+            logging.info("There are %s recordings in total for channel %s" %
+                         (recordings['CMSearchResult']['numOfMatches'], cid))
+        else:
+            recordings = server.ContentMgmt.search.getPastRecordingsForID(
+                cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
+            logging.info("Found %s recordings for channel %s" %
+                         (recordings['CMSearchResult']['numOfMatches'], cid))
 
-            # If we didn't have any recordings for this channel, skip it
-            if int(recordings['CMSearchResult']['numOfMatches']) == 0:
+        # If we didn't have any recordings for this channel, skip it
+        if int(recordings['CMSearchResult']['numOfMatches']) == 0:
+            if args.folders:
+                os.chdir(original_path)
+            continue
+
+        # This loops from every recording
+        recordinglist = recordings['CMSearchResult']['matchList']
+        for recording in recordinglist['searchMatchItem']:
+            try:
+                logging.debug("Found recording type %s on channel %s" % (
+                    recording['mediaSegmentDescriptor']['contentType'], cid
+                ))
+                if not args.photos and recording['mediaSegmentDescriptor']['contentType'] != 'video':
+                    # This recording is not a video, skip it
+                    continue
+                url = recording['mediaSegmentDescriptor']['playbackURI']
+                recording_time = datetime.strptime(
+                    recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                if args.folders:
+                    create_folder_and_chdir(cname)
+                    if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+                        create_folder_and_chdir(recording_time.year)
+                        if args.folders in ["onepermonth", "oneperday"]:
+                            create_folder_and_chdir(recording_time.month)
+                            if args.folders in ["oneperday"]:
+                                create_folder_and_chdir(recording_time.day)
+
+                # You can choose your own filename, this is just an example
+                if args.localtimefilenames:
+                    date = datetime.strptime(
+                        recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                    delta = datetime.now(
+                        timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
+                    date = date + delta
+                    name = re.sub(r'[-T\:Z]', '', date.isoformat())
+                else:
+                    name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
+                                  ['startTime'])
+
+                if not args.skipdownload:
+                    if args.photos:
+                        photo_download_from_channel(
+                            args, server, url, name, cid)
+                    else:
+                        video_download_from_channel(
+                            args, server, url, name, cid)
+
                 if args.folders:
                     os.chdir(original_path)
-                continue
-
-            # This loops from every recording
-            recordinglist = recordings['CMSearchResult']['matchList']
-            for recording in recordinglist['searchMatchItem']:
-                try:
-                    url = recording['mediaSegmentDescriptor']['playbackURI']
-                    recording_time = datetime.strptime(
-                        recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                    if args.folders:
-                        create_folder_and_chdir(cname)
-                        if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
-                            create_folder_and_chdir(recording_time.year)
-                            if args.folders in ["onepermonth", "oneperday"]:
-                                create_folder_and_chdir(recording_time.month)
-                                if args.folders in ["oneperday"]:
-                                    create_folder_and_chdir(recording_time.day)
-
-                    # You can choose your own filename, this is just an example
-                    if args.localtimefilenames:
-                        date = datetime.strptime(
-                            recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                        delta = datetime.now(
-                            timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
-                        date = date + delta
-                        name = re.sub(r'[-T\:Z]', '', date.isoformat())
-                    else:
-                        name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
-                                      ['startTime'])
-
-                    if not args.skipdownload:
-                        logging.info("Started downloading %s" % name)
-                        logging.debug(
-                            "Files to download: (url: %r, name: %r)" % (url, name))
-                        if args.frames:
-                            try:
-                                if args.folders:
-                                    name = "%s.%s" % (name, args.videoformat)
-                                else:
-                                    name = "%s-%s.%s" % (name,
-                                                         cid, args.videoformat)
-                                url = url.replace(server.host, server.address(
-                                    protocol=False, credentials=True))
-                                hikvisionapi.downloadRTSPOnlyFrames(
-                                    url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
-                            except ffmpeg.Error:
-                                logging.error(
-                                    "Could not download %s. Try to remove --frames." % name)
-                        if args.ffmpeg:
-                            try:
-                                if args.folders:
-                                    name = "%s.%s" % (name, args.videoformat)
-                                else:
-                                    name = "%s-%s.%s" % (name,
-                                                         cid, args.videoformat)
-                                url = url.replace(server.host, server.address(
-                                    protocol=False, credentials=True))
-                                hikvisionapi.downloadRTSP(
-                                    url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
-                            except ffmpeg.Error:
-                                logging.error(
-                                    "Could not download %s. Try to remove --fmpeg." % name)
-                        else:
-                            if args.folders:
-                                name = "%s.mp4" % name
-                            else:
-                                name = "%s-%s.mp4" % (name, cid)
-                            r = server.ContentMgmt.search.downloadURI(url)
-                            open(name, 'wb').write(r.content)
-                            try:
-                                hikvisionapi.processSavedVideo(
-                                    name, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
-                                    fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
-                            except ffmpeg.Error:
-                                logging.error(
-                                    "Could not transcode %s. Try to remove --forcetranscoding." % name)
-                        logging.info("Finished downloading %s" % name)
-                    if args.folders:
-                        os.chdir(original_path)
-                except TypeError as e:
-                    logging.error(
-                        "HikVision dosen't apparently like to return correct XML data...")
-                    logging.error(repr(e))
-                    logging.error(recording)
+            except TypeError as e:
+                logging.error(
+                    "HikVision dosen't apparently like to return correct XML data...")
+                logging.error(repr(e))
+                logging.error(recording)
 
 
 if __name__ == '__main__':

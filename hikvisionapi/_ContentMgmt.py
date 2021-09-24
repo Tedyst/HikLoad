@@ -82,9 +82,6 @@ class _search():
                     <endTime></endTime>
                 </timeSpan>
             </timeSpanList>
-            <contentTypeList>
-                <contentType>video</contentType>
-            </contentTypeList>
             <maxResults>64</maxResults>
             </CMSearchDescription>""")
         dictdata['CMSearchDescription']['searchID'] = str(uuid.uuid4())
@@ -109,9 +106,6 @@ class _search():
                     <endTime>2037-10-10T23:59:59Z</endTime>
                 </timeSpan>
             </timeSpanList>
-            <contentTypeList>
-            <contentType>video</contentType>
-            </contentTypeList>
             <maxResults>64</maxResults>
             </CMSearchDescription>""")
         dictdata['CMSearchDescription']['searchID'] = str(uuid.uuid4())
