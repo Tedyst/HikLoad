@@ -74,7 +74,7 @@ def create_folder_and_chdir(dir):
 
 
 def photo_download_from_channel(args, server, url, filename, cid):
-    name = "%s.png" % filename
+    name = "%s.jpeg" % filename
     logging.info("Started downloading %s" % name)
     logging.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
