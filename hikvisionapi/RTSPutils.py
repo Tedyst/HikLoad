@@ -69,7 +69,7 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         skipSeconds (int): the number of seconds that should be skipped when downloading (default is 0)
         forceTranscode (bool): force the transcoding, even if it is not needed (default is False)
     """
-    if forceTranscode == False:
+    if forceTranscode == False or forceTranscode == None:
         if fileFormat == "mp4":
             if skipSeconds == None and seconds == None:
                 logger.debug(
