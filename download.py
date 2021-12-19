@@ -206,8 +206,11 @@ def main(args):
             continue
 
         # This loops from every recording
-        recordinglist = recordings['CMSearchResult']['matchList']
-        for recording in recordinglist['searchMatchItem']:
+        recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
+        # In case there is only one recording, we need to make it a list
+        if type(recordinglist) is not list:
+            recordinglist = [recordinglist]
+        for recording in recordinglist:
             try:
                 logging.debug("Found recording type %s on channel %s" % (
                     recording['mediaSegmentDescriptor']['contentType'], cid

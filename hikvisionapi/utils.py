@@ -287,7 +287,7 @@ def xml2dict(xml: Union[str, dict]) -> dict:
     transform = etree.XSLT(xslt_doc)
     tree = transform(tree)
 
-    return tree2dict(tree.getroot())
+    return hikvisionapi.classes.Hasher(tree2dict(tree.getroot()))
 
 
 def tree2dict(node):
