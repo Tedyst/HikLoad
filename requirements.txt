@@ -6,5 +6,6 @@ idna==3.2
 lxml==4.6.5
 pyee==8.2.2
 requests==2.26.0
+tqdm==4.62.3
 urllib3==1.26.7
 xmler==0.2.0

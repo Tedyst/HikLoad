@@ -6,6 +6,15 @@ import os
 import logging
 import argparse
 import ffmpeg
+from tqdm.contrib.logging import logging_redirect_tqdm
+import tqdm
+
+
+class Recording():
+    def __init__(self, cid, cname, recording):
+        self.cid = cid
+        self.cname = cname
+        self.recording = recording
 
 
 def parse_args():
@@ -131,24 +140,8 @@ def video_download_from_channel(args, server, url, filename, cid):
         os.chmod(name, 0o777)
     logging.info("Finished downloading %s" % name)
 
-
-def main(args):
-    server = hikvisionapi.HikvisionServer(
-        args.server, args.username, args.password)
-
-    FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
-    logging.basicConfig(format=FORMAT)
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-    else:
-        logging.getLogger().setLevel(logging.INFO)
+def search_for_recordings(server, args):
     channelList = server.Streaming.getChannels()
-
-    if args.downloads:
-        create_folder_and_chdir(args.downloads)
-    original_path = os.path.abspath(os.getcwd())
-
-    logging.debug("ChannelList: %s" % channelList)
     channelids = []
     channels = []
     if args.photos:
@@ -166,6 +159,7 @@ def main(args):
                 channels.append(channel)
         logging.info("Found channels %s" % channelids)
 
+    downloadQueue = []
     for channel in channels:
         cname = channel['channelName']
         cid = channel['id']
@@ -199,70 +193,91 @@ def main(args):
             logging.error("Could not get recordings for channel %s" % cid)
             continue
 
-        # If we didn't have any recordings for this channel, skip it
-        if int(recordings['CMSearchResult']['numOfMatches']) == 0:
-            if args.folders:
-                os.chdir(original_path)
-            continue
-
         # This loops from every recording
         recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
         # In case there is only one recording, we need to make it a list
         if type(recordinglist) is not list:
             recordinglist = [recordinglist]
-        for recording in recordinglist:
-            try:
-                logging.debug("Found recording type %s on channel %s" % (
-                    recording['mediaSegmentDescriptor']['contentType'], cid
-                ))
-                if not args.photos and recording['mediaSegmentDescriptor']['contentType'] != 'video':
-                    # This recording is not a video, skip it
-                    continue
-                url = recording['mediaSegmentDescriptor']['playbackURI']
-                recording_time = datetime.strptime(
+        result = []
+        for i in recordinglist:
+            result.append(Recording(cid=cid, cname=cname, recording=i))
+        downloadQueue.extend(result)
+    return downloadQueue
+
+def download_recordings(server, args, downloadQueue):
+    original_path = os.path.abspath(os.getcwd())
+    for recordingobj in tqdm.tqdm(downloadQueue):
+        try:
+            os.chdir(original_path)
+            cid = recordingobj.cid
+            cname = recordingobj.cname
+            recording = recordingobj.recording
+            logging.debug("Found recording type %s on channel %s" % (
+                recording['mediaSegmentDescriptor']['contentType'], cid
+            ))
+            if not args.photos and recording['mediaSegmentDescriptor']['contentType'] != 'video':
+                # This recording is not a video, skip it
+                continue
+            url = recording['mediaSegmentDescriptor']['playbackURI']
+            recording_time = datetime.strptime(
+                recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+            if args.folders:
+                create_folder_and_chdir(cname)
+                if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+                    create_folder_and_chdir(recording_time.year)
+                    if args.folders in ["onepermonth", "oneperday"]:
+                        create_folder_and_chdir(recording_time.month)
+                        if args.folders in ["oneperday"]:
+                            create_folder_and_chdir(recording_time.day)
+
+            # You can choose your own filename, this is just an example
+            if args.localtimefilenames:
+                date = datetime.strptime(
                     recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                if args.folders:
-                    create_folder_and_chdir(cname)
-                    if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
-                        create_folder_and_chdir(recording_time.year)
-                        if args.folders in ["onepermonth", "oneperday"]:
-                            create_folder_and_chdir(recording_time.month)
-                            if args.folders in ["oneperday"]:
-                                create_folder_and_chdir(recording_time.day)
+                delta = datetime.now(
+                    timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
+                date = date + delta
+                name = re.sub(r'[-T\:Z]', '', date.isoformat())
+            else:
+                name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
+                                ['startTime'])
 
-                # You can choose your own filename, this is just an example
-                if args.localtimefilenames:
-                    date = datetime.strptime(
-                        recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-                    delta = datetime.now(
-                        timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
-                    date = date + delta
-                    name = re.sub(r'[-T\:Z]', '', date.isoformat())
+            if not args.skipdownload:
+                if args.photos:
+                    photo_download_from_channel(
+                        args, server, url, name, cid)
                 else:
-                    name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
-                                  ['startTime'])
+                    video_download_from_channel(
+                        args, server, url, name, cid)
 
-                if not args.skipdownload:
-                    if args.photos:
-                        photo_download_from_channel(
-                            args, server, url, name, cid)
-                    else:
-                        video_download_from_channel(
-                            args, server, url, name, cid)
+            if args.folders:
+                os.chdir(original_path)
+        except TypeError as e:
+            logging.error(
+                "HikVision dosen't apparently like to return correct XML data...")
+            logging.error(repr(e))
+            logging.error(recording)
 
-                if args.folders:
-                    os.chdir(original_path)
-            except TypeError as e:
-                logging.error(
-                    "HikVision dosen't apparently like to return correct XML data...")
-                logging.error(repr(e))
-                logging.error(recording)
+def main(args):
+    server = hikvisionapi.HikvisionServer(
+        args.server, args.username, args.password)
+
+    FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
+    logging.basicConfig(format=FORMAT)
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
+
+    downloadQueue = search_for_recordings(server, args)
+    download_recordings(server, args, downloadQueue)
 
 
 if __name__ == '__main__':
     args = parse_args()
     try:
-        main(args)
+        with logging_redirect_tqdm():
+            main(args)
     except KeyboardInterrupt:
         logging.info("Exited by user")
         exit(0)
