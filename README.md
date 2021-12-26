@@ -58,7 +58,7 @@ The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ di
 
 ## Running the script
 
-You can install the script from (PyPi)[], run the script directly from the source, or use the Docker image:
+You can install the script from [PyPi](https://pypi.org/project/hikload/), run the script directly from the source, or use the Docker image:
 
 ```bash
 docker pull ghcr.io/tedyst/hikload
