@@ -1,6 +1,6 @@
-from hikvisionapi._System import _System
-from hikvisionapi._Streaming import _Streaming
-from hikvisionapi._ContentMgmt import _ContentMgmt
+from hikload.hikvisionapi._System import _System
+from hikload.hikvisionapi._Streaming import _Streaming
+from hikload.hikvisionapi._ContentMgmt import _ContentMgmt
 
 
 class HikvisionException(Exception):

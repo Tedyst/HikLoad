@@ -1,5 +1,5 @@
 import collections
-import hikvisionapi
+import hikload.hikvisionapi as hikvisionapi
 from datetime import datetime, timedelta, timezone
 import re
 import os
@@ -8,13 +8,15 @@ import argparse
 import ffmpeg
 from tqdm.contrib.logging import logging_redirect_tqdm
 import tqdm
+from typing import List
 
 
 class Recording():
-    def __init__(self, cid, cname, recording):
+    def __init__(self, cid, cname, url, startTime):
         self.cid = cid
         self.cname = cname
-        self.recording = recording
+        self.url = url
+        self.startTime = startTime
 
 
 def parse_args():
@@ -68,6 +70,8 @@ def parse_args():
                         help='force transcoding if downloading directly from server')
     parser.add_argument('--photos', dest="photos", action=argparse.BooleanOptionalAction,
                         help='enable experimental downloading of saved photos')
+    parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
+                        help='enable mock mode  WARNING! This will not download anything from the server')
     args = parser.parse_args()
     return args
 
@@ -84,7 +88,7 @@ def create_folder_and_chdir(dir):
     os.chdir(os.path.normpath(path))
 
 
-def photo_download_from_channel(args, server, url, filename, cid):
+def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
     name = "%s.jpeg" % filename
     logging.info("Started downloading %s" % name)
     logging.debug(
@@ -96,7 +100,7 @@ def photo_download_from_channel(args, server, url, filename, cid):
     logging.info("Finished downloading %s" % name)
 
 
-def video_download_from_channel(args, server, url, filename, cid):
+def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
     if args.folders:
         name = "%s.%s" % (filename, args.videoformat)
     else:
@@ -140,7 +144,7 @@ def video_download_from_channel(args, server, url, filename, cid):
         os.chmod(name, 0o777)
     logging.info("Finished downloading %s" % name)
 
-def search_for_recordings(server, args):
+def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Recording]:
     channelList = server.Streaming.getChannels()
     channelids = []
     channels = []
@@ -200,29 +204,40 @@ def search_for_recordings(server, args):
             recordinglist = [recordinglist]
         result = []
         for i in recordinglist:
-            result.append(Recording(cid=cid, cname=cname, recording=i))
+            result.append(Recording(
+                cid=cid, 
+                cname=cname, 
+                url=i['mediaSegmentDescriptor']['playbackURI'],
+                startTime=i['timeSpan']['startTime']
+                ))
+            logging.debug("Found recording type %s on channel %s" % (
+                i['mediaSegmentDescriptor']['contentType'], cid
+            ))
+            if not args.photos and i['mediaSegmentDescriptor']['contentType'] != 'video':
+                # This recording is not a video, skip it
+                continue
         downloadQueue.extend(result)
     return downloadQueue
 
-def download_recordings(server, args, downloadQueue):
+def search_for_recordings_mock() -> List[Recording]:
+    return [
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+    ]
+
+def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueue: List[Recording]):
     original_path = os.path.abspath(os.getcwd())
     for recordingobj in tqdm.tqdm(downloadQueue):
         try:
             os.chdir(original_path)
-            cid = recordingobj.cid
-            cname = recordingobj.cname
-            recording = recordingobj.recording
-            logging.debug("Found recording type %s on channel %s" % (
-                recording['mediaSegmentDescriptor']['contentType'], cid
-            ))
-            if not args.photos and recording['mediaSegmentDescriptor']['contentType'] != 'video':
-                # This recording is not a video, skip it
-                continue
-            url = recording['mediaSegmentDescriptor']['playbackURI']
             recording_time = datetime.strptime(
-                recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
             if args.folders:
-                create_folder_and_chdir(cname)
+                create_folder_and_chdir(recordingobj.cname)
                 if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
                     create_folder_and_chdir(recording_time.year)
                     if args.folders in ["onepermonth", "oneperday"]:
@@ -233,22 +248,23 @@ def download_recordings(server, args, downloadQueue):
             # You can choose your own filename, this is just an example
             if args.localtimefilenames:
                 date = datetime.strptime(
-                    recording['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+                    recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
                 delta = datetime.now(
                     timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
                 date = date + delta
                 name = re.sub(r'[-T\:Z]', '', date.isoformat())
             else:
-                name = re.sub(r'[-T\:Z]', '', recording['timeSpan']
-                                ['startTime'])
+                name = re.sub(r'[-T\:Z]', '', recordingobj.startTime)
 
             if not args.skipdownload:
                 if args.photos:
                     photo_download_from_channel(
-                        args, server, url, name, cid)
+                        server, args, recordingobj.url, name, recordingobj.cid)
                 else:
                     video_download_from_channel(
-                        args, server, url, name, cid)
+                        server, args, recordingobj.url, name, recordingobj.cid)
+            else:
+                logging.debug("Skipping download of %s" % recordingobj.url)
 
             if args.folders:
                 os.chdir(original_path)
@@ -256,7 +272,7 @@ def download_recordings(server, args, downloadQueue):
             logging.error(
                 "HikVision dosen't apparently like to return correct XML data...")
             logging.error(repr(e))
-            logging.error(recording)
+            logging.error(recordingobj)
 
 def main(args):
     server = hikvisionapi.HikvisionServer(
@@ -269,7 +285,11 @@ def main(args):
     else:
         logging.getLogger().setLevel(logging.INFO)
 
-    downloadQueue = search_for_recordings(server, args)
+    if args.mock:
+        downloadQueue = search_for_recordings_mock()
+        args.skipdownload = True
+    else:
+        downloadQueue = search_for_recordings(server, args)
     download_recordings(server, args, downloadQueue)
 
 

@@ -1,4 +1,4 @@
-import hikvisionapi
+import hikload.hikvisionapi as hikvisionapi
 
 
 class _System():

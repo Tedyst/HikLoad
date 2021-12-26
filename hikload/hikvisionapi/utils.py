@@ -1,4 +1,4 @@
-import hikvisionapi
+import hikload.hikvisionapi as hikvisionapi
 import logging
 from collections import OrderedDict
 from io import BytesIO
