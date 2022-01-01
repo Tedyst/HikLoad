@@ -4,3 +4,4 @@ dist
 MANIFEST
 hikload.egg-info
 .vscode
+build

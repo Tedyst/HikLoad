@@ -5,12 +5,11 @@ A collection of short Python scripts that utilize the ISAPI specification for Hi
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
 
 ```
-usage: download.py [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug]
-                   [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS]
-                   [--days DAYS] [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS]
-                   [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg]
-                   [--forcetranscoding | --no-forcetranscoding] [--photos | --no-photos]
-                   server username password
+usage: hikload [-h] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug]
+               [--videoformat VIDEOFORMAT] [--downloads DOWNLOADS] [--frames FRAMES] [--force FORCE] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS]
+               [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS] [--localtimefilenames | --no-localtimefilenames]
+               [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg] [--forcetranscoding | --no-forcetranscoding] [--photos | --no-photos] [--mock | --no-mock]
+               server username password
 
 Download Recordings from a HikVision server, from a range interval
 
@@ -19,7 +18,7 @@ positional arguments:
   username              the username
   password              the password
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --starttime STARTTIME
                         the start time in ISO format (default: today at 00:00:00, local time)
@@ -52,35 +51,47 @@ optional arguments:
                         force transcoding if downloading directly from server
   --photos, --no-photos
                         enable experimental downloading of saved photos
+  --mock, --no-mock     enable mock mode WARNING! This will not download anything from the server
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.
 
 ## Running the script
 
-You can run the script directly from the source, or use the Docker image:
+You can install the script from [PyPi](https://pypi.org/project/hikload/), run the script directly from the source, or use the Docker image:
 
 ```bash
 docker pull ghcr.io/tedyst/hikload
 docker run -v $(pwd)/Downloads:/app/Downloads ghcr.io/tedyst/hikload 192.168.10.239 admin password
 ```
 
+If you decide to use the PyPi package, there will be a command called `hikload` in your PATH:
+```bash
+pip install hikload
+hikload -h
+```
+
+To run the script from source, you can use this command from the root directory of the project:
+```bash
+python -m hikload -h
+```
+
 If you want to use the default arguments, you can specify only the required arguments:
 
 ```bash
-python download.py 192.168.10.239 username password
+hikload 192.168.10.239 username password
 ```
 
 For more advanced users, you can specify optional arguments like the start and end time for the video search:
 
 ```bash
-python download.py 192.168.10.239 username password --starttime 2021-09-19T03:00:00+03:00 --endtime 2021-09-20T04:00:00+00:00
+hikload 192.168.10.239 username password --starttime 2021-09-19T03:00:00+03:00 --endtime 2021-09-20T04:00:00+00:00
 ```
 
 Or just specify the cameras that you want to search(be sure to use the HikVision format - 101 for first camera, 201 for the second one...):
 
 ```bash
-python download.py 192.168.10.239 username password --cameras=201,301
+hikload 192.168.10.239 username password --cameras=201,301
 ```
 
 ## Installing Dependencies
