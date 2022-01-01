@@ -1,14 +1,16 @@
-import collections
-import hikload.hikvisionapi as hikvisionapi
-from datetime import datetime, timedelta, timezone
-import re
-import os
-import logging
 import argparse
-import ffmpeg
-from tqdm.contrib.logging import logging_redirect_tqdm
-import tqdm
+import logging
+import os
+import re
+import time
+from datetime import datetime, timedelta, timezone
 from typing import List
+
+import ffmpeg
+import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
+
+import hikload.hikvisionapi as hikvisionapi
 
 
 class Recording():
@@ -89,23 +91,27 @@ def create_folder_and_chdir(dir):
 
 
 def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
+    start_time = time.perf_counter()
     name = "%s.jpeg" % filename
-    logging.info("Started downloading %s" % name)
+    logging.debug("Started downloading %s" % name)
     logging.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
     r = server.ContentMgmt.search.downloadURI(url)
     open(name, 'wb').write(r.content)
     if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
         os.chmod(name, 0o777)
-    logging.info("Finished downloading %s" % name)
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    logging.info(f"Finished downloading {name} in {run_time:.2f} seconds")
 
 
 def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
+    start_time = time.perf_counter()
     if args.folders:
         name = "%s.%s" % (filename, args.videoformat)
     else:
         name = "%s-%s.%s" % (filename, cid, args.videoformat)
-    logging.info("Started downloading %s" % name)
+    logging.debug("Started downloading %s" % name)
     logging.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
     if args.frames:
@@ -142,9 +148,12 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
                 "Could not transcode %s. Try to remove --forcetranscoding." % name)
     if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
         os.chmod(name, 0o777)
-    logging.info("Finished downloading %s" % name)
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    logging.info(f"Finished downloading {name} in {run_time:.2f} seconds")
 
 def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Recording]:
+    start_time = time.perf_counter()
     channelList = server.Streaming.getChannels()
     channelids = []
     channels = []
@@ -220,6 +229,9 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                 # This recording is not a video, skip it
                 continue
         downloadQueue.extend(result)
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    logging.info(f"Found {len(downloadQueue)} files to download in {run_time:.2f} seconds")
     return downloadQueue
 
 def search_for_recordings_mock() -> List[Recording]:
