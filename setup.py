@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="hikload",
-    version="1.0.1",
+    version="1.0.2",
     description="Download videos from a HikVision DVR/NVR",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -25,7 +25,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    install_requires=["tqdm", "ffmpeg-python", "lxml", "requests"],
+    install_requires=["tqdm", "ffmpeg-python", "lxml", "requests", "xmler"],
     entry_points={
         "console_scripts": [
             "hikload=hikload.__main__:main",

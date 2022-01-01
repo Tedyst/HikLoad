@@ -198,7 +198,10 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
             continue
 
         # This loops from every recording
-        recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
+        if recordings['CMSearchResult']['numOfMatches'] != "0":
+            recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
+        else:
+            recordinglist = []
         # In case there is only one recording, we need to make it a list
         if type(recordinglist) is not list:
             recordinglist = [recordinglist]
@@ -230,6 +233,8 @@ def search_for_recordings_mock() -> List[Recording]:
     ]
 
 def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueue: List[Recording]):
+    if args.downloads:
+        create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
     for recordingobj in tqdm.tqdm(downloadQueue):
         try:
