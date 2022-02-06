@@ -78,7 +78,7 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
-    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
+    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, default=True,
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
     args = parser.parse_args()
     return args

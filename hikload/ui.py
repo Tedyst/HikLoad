@@ -89,10 +89,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.downloadthread.running = False
-        exit(0)
+        sys.exit(0)
 
     def reject(self):
-        exit(0)
+        sys.exit(0)
 
 
 
@@ -203,10 +203,10 @@ class Startup(QtWidgets.QDialog):
         if self.skipclosing:
             return
         print("Exited by user", event.type())
-        exit(0)
+        sys.exit(0)
 
     def reject(self):
-        exit(0)
+        sys.exit(0)
 
 
 def main(args=None):

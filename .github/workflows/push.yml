@@ -1,0 +1,29 @@
+name: Package Application
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        config:
+          - { os: ubuntu-latest, arch: x64, name: lin }
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Package the app using PyInstaller
+      run: |
+        pip install -r requirements.txt
+        pip install PyInstaller
+        pyinstaller hikload.spec
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+        path: dist/hikload
