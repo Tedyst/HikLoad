@@ -2,22 +2,70 @@ from PyQt5 import QtWidgets, uic, QtGui
 import sys
 import os
 import logging
-import time
 from io import StringIO
+import threading
+from .download import search_for_recordings, search_for_recordings_mock, create_folder_and_chdir, download_recording
 
-from hikload.hikvisionapi.classes import HikvisionException, HikvisionServer
+from hikload.hikvisionapi.classes import HikvisionServer
 log_stream = StringIO()
 
+class downloadThread(threading.Thread):
+    def __init__(self, window: QtWidgets.QMainWindow, server: HikvisionServer, args):
+        threading.Thread.__init__(self)
+        self.window = window
+        self.running = True
+        self.server = server
+        self.args = args
+        self.recordings = None
+        self.finished = 0
+
+    def run(self):
+        logger = logging.getLogger('hikload')
+        logger.info("download thread started")
+        logger.debug("args: %s", self.args)
+
+        if self.args.mock:
+            recordings = search_for_recordings_mock()
+        else:
+            recordings = search_for_recordings(self.args)
+        self.recordings = recordings
+
+        self.window.progressBar.setMaximum(len(recordings))
+        self.window.progressBar.setValue(0)
+        original_path = os.path.abspath(os.getcwd())
+        if self.args.downloads:
+            create_folder_and_chdir(self.args.downloads)
+
+        self.window.treeWidget.clear()
+        i = 0
+        for recording in recordings:
+            item = QtWidgets.QTreeWidgetItem([str(recording)])
+            self.window.treeWidget.insertTopLevelItems(i, [item])
+            i += 1
+
+        for recordingobj in recordings:
+            if self.running is False:
+                return
+            self.window.progressBar.setValue(self.finished)
+
+            download_recording(self.server, self.args, recordingobj, original_path)
+            asd: QtWidgets.QTreeWidget = self.window.treeWidget
+            asd.takeTopLevelItem(0)
+
+            self.finished += 1
+        self.window.progressBar.setValue(len(recordings))
+        logger.info("Finished downloading all recordings")
+        logger.info("download thread finished")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, args=None):
         super(MainWindow, self).__init__()
         self.args = None
-        path = os.path.dirname(__file__)
         startup = Startup(parent=self, args=args)
         startup.show()
         startup.exec_()
 
+        path = os.path.dirname(__file__)
         uic.loadUi(os.path.join(path, 'MainWindow.ui'), self)
         self.show()
         frameGm = self.frameGeometry()
@@ -26,12 +74,13 @@ class MainWindow(QtWidgets.QMainWindow):
         frameGm.moveCenter(centerPoint)
         self.move(frameGm.topLeft())
 
-        logger = logging.getLogger('hikload')
-        logger.info(args)
+        server = HikvisionServer(self.args.server, self.args.username, self.args.password)
+        self.downloadthread = downloadThread(self, server, args)
+        self.downloadthread.start()
 
         while True:
             QtGui.QGuiApplication.processEvents()
-            asd: QtWidgets.QTextEdit =self.textEdit
+            asd: QtWidgets.QTextEdit = self.textEdit
             asd.textCursor().selectionEnd()
             value = log_stream.getvalue()
             if len(value) != 0:
@@ -39,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
             log_stream.truncate(0)
 
     def closeEvent(self, event):
+        self.downloadthread.running = False
         exit(0)
 
     def reject(self):
@@ -127,9 +177,11 @@ class Startup(QtWidgets.QDialog):
                 server.test_connection()
                 channelList = server.Streaming.getChannels()
                 self.cameras.clear()
+                i = 0
                 for channel in channelList['StreamingChannelList']['StreamingChannel']:
                     item = QtWidgets.QTreeWidgetItem([channel['id']])
-                    self.cameras.insertTopLevelItems(0, [item])
+                    self.cameras.insertTopLevelItems(i, [item])
+                    i += 1
                 self.cameras.selectAll()
             except Exception as e:
                 ErrorDialog("Could not connect to the server").exec_()
@@ -137,9 +189,11 @@ class Startup(QtWidgets.QDialog):
                 return
         else:
             self.cameras.clear()
+            i = 0
             for channel in ["101", "201", "301"]:
                 item = QtWidgets.QTreeWidgetItem([channel])
-                self.cameras.insertTopLevelItems(0, [item])
+                self.cameras.insertTopLevelItems(i, [item])
+                i += 1
             self.cameras.selectAll()
         QtWidgets.QMessageBox.information(self, "Success", "Successfully connected to the server")
         self.start_downloading_button.setEnabled(True)
@@ -164,8 +218,6 @@ def main(args=None):
     else:
         logging.basicConfig(stream=log_stream, format=FORMAT)
         logger.setLevel(logging.INFO)
-
-    logger.info("started")
 
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow(args)

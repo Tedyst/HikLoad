@@ -25,7 +25,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    install_requires=["tqdm", "ffmpeg-python", "lxml", "requests", "xmler"],
+    install_requires=["tqdm", "ffmpeg-python", "lxml", "requests", "xmler", "PyQt5", "PyQt5-sip"],
     entry_points={
         "console_scripts": [
             "hikload=hikload.__main__:main",

@@ -9,3 +9,6 @@ requests==2.26.0
 tqdm==4.62.3
 urllib3==1.26.7
 xmler==0.2.0
+PyQt5==5.15.6
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.9.0

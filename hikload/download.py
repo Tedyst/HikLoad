@@ -21,6 +21,8 @@ class Recording():
         self.cname = cname
         self.url = url
         self.startTime = startTime
+    def __str__(self) -> str:
+        return "{}-{}".format(self.cname, self.startTime)
 
 
 def parse_args():
@@ -77,7 +79,7 @@ def parse_args():
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
-                        help='enable UI interface WARNING! Requires Qt5 installed')
+                        help='enable UI interface WARNING! Requires Qt5 to be installed')
     args = parser.parse_args()
     return args
 
@@ -241,59 +243,68 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
 def search_for_recordings_mock() -> List[Recording]:
     return [
         Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:48Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:49Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:50Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:51Z", url="https://tedyst.ro"),
     ]
+
+def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj: Recording, original_path):
+    try:
+        logger = logging.getLogger('hikload')
+        if args.mock:
+            logger.info("Mocking download of %s" % recordingobj.url)
+            time.sleep(1)
+            return
+        os.chdir(original_path)
+        recording_time = datetime.strptime(
+            recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
+        if args.folders:
+            create_folder_and_chdir(recordingobj.cname)
+            if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+                create_folder_and_chdir(recording_time.year)
+                if args.folders in ["onepermonth", "oneperday"]:
+                    create_folder_and_chdir(recording_time.month)
+                    if args.folders in ["oneperday"]:
+                        create_folder_and_chdir(recording_time.day)
+
+        # You can choose your own filename, this is just an example
+        if args.localtimefilenames:
+            date = datetime.strptime(
+                recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
+            delta = datetime.now(
+                timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
+            date = date + delta
+            name = re.sub(r'[-T\:Z]', '', date.isoformat())
+        else:
+            name = re.sub(r'[-T\:Z]', '', recordingobj.startTime)
+
+        if not args.skipdownload:
+            if args.photos:
+                photo_download_from_channel(
+                    server, args, recordingobj.url, name, recordingobj.cid)
+            else:
+                video_download_from_channel(
+                    server, args, recordingobj.url, name, recordingobj.cid)
+        else:
+            logging.debug("Skipping download of %s" % recordingobj.url)
+
+        if args.folders:
+            os.chdir(original_path)
+    except TypeError as e:
+        logging.error(
+            "HikVision dosen't apparently like to return correct XML data...")
+        logging.error(repr(e))
+        logging.error(recordingobj)
+
 
 def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueue: List[Recording]):
     if args.downloads:
         create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
     for recordingobj in tqdm.tqdm(downloadQueue):
-        try:
-            os.chdir(original_path)
-            recording_time = datetime.strptime(
-                recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
-            if args.folders:
-                create_folder_and_chdir(recordingobj.cname)
-                if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
-                    create_folder_and_chdir(recording_time.year)
-                    if args.folders in ["onepermonth", "oneperday"]:
-                        create_folder_and_chdir(recording_time.month)
-                        if args.folders in ["oneperday"]:
-                            create_folder_and_chdir(recording_time.day)
-
-            # You can choose your own filename, this is just an example
-            if args.localtimefilenames:
-                date = datetime.strptime(
-                    recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
-                delta = datetime.now(
-                    timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
-                date = date + delta
-                name = re.sub(r'[-T\:Z]', '', date.isoformat())
-            else:
-                name = re.sub(r'[-T\:Z]', '', recordingobj.startTime)
-
-            if not args.skipdownload:
-                if args.photos:
-                    photo_download_from_channel(
-                        server, args, recordingobj.url, name, recordingobj.cid)
-                else:
-                    video_download_from_channel(
-                        server, args, recordingobj.url, name, recordingobj.cid)
-            else:
-                logging.debug("Skipping download of %s" % recordingobj.url)
-
-            if args.folders:
-                os.chdir(original_path)
-        except TypeError as e:
-            logging.error(
-                "HikVision dosen't apparently like to return correct XML data...")
-            logging.error(repr(e))
-            logging.error(recordingobj)
+        download_recording(server, args, recordingobj, original_path)
 
 def run(args):
     if args.server == "" or args.server == None:
