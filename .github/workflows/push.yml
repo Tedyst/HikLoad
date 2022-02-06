@@ -8,8 +8,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, arch: x64, name: linux }
-          - { os: windows-latest, arch: x64, name: windows }
+          - { os: ubuntu-latest, arch: x64, name: linux, filename: 'hikload' }
+          - { os: windows-latest, arch: x64, name: windows, filename: 'hikload.exe' }
 
     steps:
     - uses: actions/checkout@v2
@@ -29,4 +29,4 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
-        path: dist/hikload
+        path: dist/${{ matrix.config.filename }}
