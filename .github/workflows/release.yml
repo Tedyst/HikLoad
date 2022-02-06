@@ -18,8 +18,9 @@ jobs:
           prerelease: false
       - shell: bash
         run: |
-          echo ${{ steps.release.outputs.upload_url }} > url.txt
-      - name: Upload math result for job 1
+          echo "${{ steps.release.outputs.upload_url }}" > url.txt
+          echo "${{ steps.release.outputs.upload_url }}"
+      - name: Upload upload_url
         uses: actions/upload-artifact@v1
         with:
           name: upload_url
@@ -52,7 +53,7 @@ jobs:
         name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
         path: dist/${{ matrix.config.filename }}
 
-    - name: Download math result for job 2
+    - name: Download upload_url
       uses: actions/download-artifact@v1
       with:
         name: upload_url
