@@ -38,6 +38,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.textEdit.append(value[:-1])
             log_stream.truncate(0)
 
+    def closeEvent(self, event):
+        exit(0)
+
+    def reject(self):
+        exit(0)
+
 
 
 
@@ -115,18 +121,26 @@ class Startup(QtWidgets.QDialog):
         self.close()
 
     def test_connection(self):
-        try:
-            server = HikvisionServer(self.server_ip.text(), self.username.text(), self.password.text())
-            server.test_connection()
-            channelList = server.Streaming.getChannels()
+        if not self.args.mock:
+            try:
+                server = HikvisionServer(self.server_ip.text(), self.username.text(), self.password.text())
+                server.test_connection()
+                channelList = server.Streaming.getChannels()
+                self.cameras.clear()
+                for channel in channelList['StreamingChannelList']['StreamingChannel']:
+                    item = QtWidgets.QTreeWidgetItem([channel['id']])
+                    self.cameras.insertTopLevelItems(0, [item])
+                self.cameras.selectAll()
+            except Exception as e:
+                ErrorDialog("Could not connect to the server").exec_()
+                logging.error(e)
+                return
+        else:
             self.cameras.clear()
-            for channel in channelList['StreamingChannelList']['StreamingChannel']:
-                item = QtWidgets.QTreeWidgetItem(channel['id'])
+            for channel in ["101", "201", "301"]:
+                item = QtWidgets.QTreeWidgetItem([channel])
                 self.cameras.insertTopLevelItems(0, [item])
-        except Exception as e:
-            ErrorDialog("Could not connect to the server").exec_()
-            logging.error(e)
-            return
+            self.cameras.selectAll()
         QtWidgets.QMessageBox.information(self, "Success", "Successfully connected to the server")
         self.start_downloading_button.setEnabled(True)
 
