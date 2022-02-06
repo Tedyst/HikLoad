@@ -1,0 +1,68 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+      - shell: bash
+        run: |
+          echo ${{ steps.release.outputs.upload_url }} > url.txt
+      - name: Upload math result for job 1
+        uses: actions/upload-artifact@v1
+        with:
+          name: upload_url
+          path: url.txt
+
+  build:
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - { os: ubuntu-latest, arch: x64, name: linux, filename: 'hikload' }
+          - { os: windows-latest, arch: x64, name: windows, filename: 'hikload.exe' }
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+        architecture: ${{ matrix.config.arch }}
+    - name: Package the app using PyInstaller
+      run: |
+        pip install -r requirements.txt
+        pip install PyInstaller
+        pyinstaller hikload.spec
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+        path: dist/${{ matrix.config.filename }}
+
+    - name: Download math result for job 2
+      uses: actions/download-artifact@v1
+      with:
+        name: upload_url
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: $(cat upload_url)
+        asset_path: dist/${{ matrix.config.filename }}
+        asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+        asset_content_type: application/octet-stream
