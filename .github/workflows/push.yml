@@ -8,10 +8,16 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, arch: x64, name: lin }
+          - { os: ubuntu-latest, arch: x64, name: linux }
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+        architecture: ${{ matrix.config.arch }}
 
     - name: Package the app using PyInstaller
       run: |
