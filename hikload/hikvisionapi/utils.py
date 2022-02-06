@@ -11,7 +11,7 @@ from lxml import etree
 from requests.auth import HTTPDigestAuth
 from xmler import dict2xml as d2xml
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('hikload')
 
 
 def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, rawResponse: bool = False) -> dict:

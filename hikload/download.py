@@ -5,12 +5,14 @@ import re
 import time
 from datetime import datetime, timedelta, timezone
 from typing import List
+from io import StringIO
 
 import ffmpeg
 import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 import hikload.hikvisionapi as hikvisionapi
+from hikload.hikvisionapi.classes import HikvisionException
 
 
 class Recording():
@@ -24,11 +26,11 @@ class Recording():
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Download Recordings from a HikVision server, from a range interval')
-    parser.add_argument('server', type=str,
+    parser.add_argument('--server', type=str, dest="server",
                         help='the hikvision server\'s address')
-    parser.add_argument('username', type=str,
+    parser.add_argument('--username', type=str, dest="username",
                         help='the username')
-    parser.add_argument('password', type=str,
+    parser.add_argument('--password', type=str, dest="password",
                         help='the password')
     parser.add_argument('--starttime', type=lambda s: datetime.fromisoformat(s),
                         default=datetime.now().replace(
@@ -42,13 +44,13 @@ def parse_args():
                         help='create a separate folder per camera/duration (default: disabled)')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, dest="debug",
                         help='enable debug mode (default: false)')
-    parser.add_argument('--videoformat', dest="videoformat", default="mp4",
-                        help='specify video format (default: mp4)')
-    parser.add_argument('--downloads', dest="downloads", default="Downloads",
+    parser.add_argument('--videoformat', dest="videoformat", default="mkv", choices=['mkv', 'mp4', 'avi'],
+                        help='specify video format (default: mkv)')
+    parser.add_argument('--downloads', dest="downloads", default=os.path.join(os.getcwd(), "Downloads"),
                         help='the downloads folder (default: "Downloads")')
     parser.add_argument('--frames', dest="frames", type=int,
                         help='save a frame for every X frames in the video (default: false)')
-    parser.add_argument('--force', dest="force", type=int,
+    parser.add_argument('--force', dest="force", action=argparse.BooleanOptionalAction,
                         help='force saving of files (default: false)')
     parser.add_argument('--skipseconds', dest="skipseconds", type=int,
                         help='skip first X seconds for each video (default: 0)')
@@ -74,6 +76,8 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
+    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
+                        help='enable UI interface WARNING! Requires Qt5 installed')
     args = parser.parse_args()
     return args
 
@@ -292,17 +296,26 @@ def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueu
             logging.error(recordingobj)
 
 def run(args):
+    if args.server == "" or args.server == None:
+        raise HikvisionException("No server specified! You need to specify a server with --server")
+    if args.username == "" or args.username == None:
+        raise HikvisionException("No username specified! You need to specify a username with --username")
+    if args.password == "" or args.password == None:
+        raise HikvisionException("No password specified! You need to specify a password with --password")
+
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password)
 
     FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(format=FORMAT)
+    logger = logging.getLogger('hikload')
     if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
     else:
-        logging.getLogger().setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
 
     with logging_redirect_tqdm():
+        server.test_connection()
         if args.mock:
             downloadQueue = search_for_recordings_mock()
             args.skipdownload = True

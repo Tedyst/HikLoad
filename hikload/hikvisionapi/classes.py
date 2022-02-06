@@ -1,6 +1,7 @@
 from hikload.hikvisionapi._System import _System
 from hikload.hikvisionapi._Streaming import _Streaming
 from hikload.hikvisionapi._ContentMgmt import _ContentMgmt
+from requests.exceptions import ConnectionError
 
 
 class HikvisionException(Exception):
@@ -57,6 +58,15 @@ class HikvisionServer:
             string += "%s:%s@" % (self.user, self.password)
         string += self.host + "/ISAPI"
         return string
+
+    def test_connection(self):
+        """This method tests the connection to the DVR"""
+        try:
+            self.System.getDeviceInfo()
+        except HikvisionException as e:
+            raise HikvisionException("Error while testing connection: %s" % e)
+        except ConnectionError as e:
+            raise HikvisionException("Error while testing connection: %s" % e)
 
 class Hasher(dict):
     # https://stackoverflow.com/a/3405143/190597

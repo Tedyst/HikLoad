@@ -3,7 +3,7 @@ import ffmpeg
 import os
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('hikload')
 
 
 def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool = False, force: bool = False, skipSeconds: bool = 0):

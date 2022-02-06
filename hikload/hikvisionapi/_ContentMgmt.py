@@ -2,7 +2,7 @@ import hikload.hikvisionapi as hikvisionapi
 import uuid
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('hikload')
 
 
 class _search():

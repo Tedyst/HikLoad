@@ -29,6 +29,7 @@ setup(
     entry_points={
         "console_scripts": [
             "hikload=hikload.__main__:main",
+            "hikload-qt=hikload.ui:main",
         ]
     },
 )
