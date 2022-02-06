@@ -2,9 +2,7 @@ name: Package Application
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ master ui ]
 
 jobs:
   build:
