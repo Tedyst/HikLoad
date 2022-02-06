@@ -20,7 +20,6 @@ jobs:
       - shell: bash
         run: |
           echo "${{ steps.release.outputs.upload_url }}" > url.txt
-          echo "${{ steps.release.outputs.upload_url }}"
       - name: Upload upload_url
         uses: actions/upload-artifact@v1
         with:
@@ -32,8 +31,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, arch: x64, name: linux, filename: 'hikload' }
-          - { os: windows-latest, arch: x64, name: windows, filename: 'hikload.exe' }
+          - { os: ubuntu-latest, arch: x64, name: linux, extension: '' }
+          - { os: windows-latest, arch: x64, name: windows, extension: '.exe' }
 
     steps:
     - uses: actions/checkout@v2
@@ -52,19 +51,25 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
-        path: dist/${{ matrix.config.filename }}
+        path: dist/hikload${{ matrix.config.extension }}
 
     - name: Download upload_url
       uses: actions/download-artifact@v1
       with:
         name: upload_url
+    - id: releaseurl
+      run: |
+        echo "::set-output name=url::$(cat upload_url/url.txt)"
+    - id: test
+      run: |
+        echo "${{ steps.releaseurl.outputs.url }}"
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: $(cat upload_url)
-        asset_path: dist/${{ matrix.config.filename }}
-        asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+        upload_url: ${{ steps.releaseurl.outputs.url }}
+        asset_path: dist/hikload${{ matrix.config.extension }}
+        asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}
         asset_content_type: application/octet-stream
