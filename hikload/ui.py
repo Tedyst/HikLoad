@@ -1,9 +1,4 @@
-GUI = True
-try:
-    from PyQt5 import QtWidgets, uic, QtGui
-except:
-    print("Disabling GUI since PyQt5 is not installed")
-    GUI = False
+from PyQt5 import QtWidgets, uic, QtGui
 import sys
 import os
 import logging
@@ -215,8 +210,6 @@ class Startup(QtWidgets.QDialog):
 
 
 def main(args=None):
-    if args is None:
-        args = parse_args()
     FORMAT = "[%(funcName)s] %(message)s"
     logger = logging.getLogger('hikload')
     if args.debug:
