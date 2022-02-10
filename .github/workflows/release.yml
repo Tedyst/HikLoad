@@ -36,17 +36,6 @@ jobs:
         with:
           name: upload_url
           path: url.txt
-      - name: Find the old version and replace it with the newly released one
-        uses: jacobtomlinson/gha-find-replace@v2
-        with:
-          find: "\\d\\.\\d\\.\\d"
-          replace: ${{ steps.semantic.outputs.new_release_version }}
-          include: "setup.py"
-          regex: true
-      - uses: EndBug/add-and-commit@v8
-        with:
-          default_author: github_actions
-          message: 'ci: increment version in setup.py'
 
   pyinstaller:
     runs-on: ${{ matrix.config.os }}
@@ -84,9 +73,6 @@ jobs:
     - id: releaseurl
       run: |
         echo "::set-output name=url::$(cat upload_url/url.txt)"
-    - id: test
-      run: |
-        echo "${{ steps.releaseurl.outputs.url }}"
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
@@ -113,6 +99,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install build
+
+    - name: Download upload_url
+      uses: actions/download-artifact@v1
+      with:
+        name: upload_url
+    - id: releaseurl
+      run: |
+        echo "::set-output name=url::$(cat upload_url/url.txt)"
+
+    - name: Find the old version and replace it with the newly released one
+      uses: jacobtomlinson/gha-find-replace@v2
+      with:
+        find: "\\d\\.\\d\\.\\d"
+        replace: ${{ steps.releaseurl.outputs.url }}
+        include: "setup.py"
+        regex: true
+    - uses: EndBug/add-and-commit@v8
+      with:
+        default_author: github_actions
+        message: 'ci: increment version in setup.py'
+
     - name: Build package
       run: python -m build
     - name: Publish package
