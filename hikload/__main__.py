@@ -10,6 +10,7 @@ def main():
         if args.ui:
             ui_main(args)
         else:
+            logging.info("If you want to use the UI, use the --ui flag")
             run(args)
     except KeyboardInterrupt:
         logging.info("Exited by user")
