@@ -37,6 +37,15 @@ jobs:
           name: upload_url
           path: url.txt
 
+      - shell: bash
+        run: |
+          echo "${{ steps.semantic.outputs.new_release_version }}" > release.txt
+      - name: Upload release_version
+        uses: actions/upload-artifact@v1
+        with:
+          name: release_version
+          path: release.txt
+
   pyinstaller:
     runs-on: ${{ matrix.config.os }}
     needs: [releasetag]
@@ -127,3 +136,51 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
+
+  dockerpublish:
+    runs-on: ubuntu-latest
+    needs: [releasetag]
+    name: Package the application and publish it to Github Packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: tedyst
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download release
+        uses: actions/download-artifact@v1
+        with:
+          name: release_version
+      - id: version
+        run: |
+          echo "::set-output name=VERSION::$(cat release_version/release.txt)"
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/tedyst/hikload:${{ steps.version.outputs.VERSION }}
+            ghcr.io/tedyst/hikload:latest
+          cache-from: type=gha
+          cache-to: type=gha
+          platforms: linux/amd64,linux/arm64
