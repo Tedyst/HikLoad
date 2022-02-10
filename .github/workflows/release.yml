@@ -1,22 +1,33 @@
-name: "tagged-release"
+name: "Release new version"
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
-
+  releasetag:
+    runs-on: ubuntu-latest
+    if: "contains(github.event.head_commit.message, '[RELEASE]') || contains(github.event_name, 'workflow')"
     steps:
-      - name: Create release
+      - uses: actions/checkout@v2
+      - name: Generate Semantic Release Version
+        uses: cycjimmy/semantic-release-action@v2
+        id: semantic
+        with:
+          extra_plugins: |
+            @semantic-release/commit-analyzer
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub release
         id: release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
+          automatic_release_tag: ${{ steps.semantic.outputs.new_release_version }}
       - shell: bash
         run: |
           echo "${{ steps.release.outputs.upload_url }}" > url.txt
@@ -25,9 +36,22 @@ jobs:
         with:
           name: upload_url
           path: url.txt
+      - name: Find the old version and replace it with the newly released one
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "\\d\\.\\d\\.\\d"
+          replace: ${{ steps.semantic.outputs.new_release_version }}
+          include: "setup.py"
+          regex: true
+      - uses: EndBug/add-and-commit@v8
+        with:
+          default_author: github_actions
+          message: 'ci: increment version in setup.py'
 
-  build:
+  pyinstaller:
     runs-on: ${{ matrix.config.os }}
+    needs: [releasetag]
+    name: Package the application using PyInstaller
     strategy:
       matrix:
         config:
@@ -73,3 +97,26 @@ jobs:
         asset_path: dist/hikload${{ matrix.config.extension }}
         asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}
         asset_content_type: application/octet-stream
+
+  pypipublish:
+    runs-on: ${{ matrix.config.os }}
+    needs: [releasetag]
+    name: Package the application and publish it to PyPi
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+    - name: Build package
+      run: python -m build
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
