@@ -1,0 +1,1 @@
+https://uploads.github.com/repos/Tedyst/HikLoad/releases/59225586/assets{?name,label}
