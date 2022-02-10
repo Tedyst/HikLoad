@@ -6,6 +6,8 @@ A collection of short Python scripts that utilize the ISAPI specification for Hi
 
 If you want to use the new interface written in Qt, you can use the command `hikload-qt` after installing using one of the recommended methods (only pip and source). 
 
+![The startup popup](docs/startup.png)
+
 ## Using the terminal
 
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
