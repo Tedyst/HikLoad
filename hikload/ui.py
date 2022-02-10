@@ -4,7 +4,7 @@ import os
 import logging
 from io import StringIO
 import threading
-from .download import search_for_recordings, search_for_recordings_mock, create_folder_and_chdir, download_recording
+from .download import parse_args, search_for_recordings, search_for_recordings_mock, create_folder_and_chdir, download_recording
 
 from hikload.hikvisionapi.classes import HikvisionServer
 log_stream = StringIO()
@@ -210,6 +210,8 @@ class Startup(QtWidgets.QDialog):
 
 
 def main(args=None):
+    if args is None:
+        args = parse_args()
     FORMAT = "[%(funcName)s] %(message)s"
     logger = logging.getLogger('hikload')
     if args.debug:

@@ -23,6 +23,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
     ],
+    package_data={'hikload': ['MainWindow.ui', 'Startup.ui']},
     packages=find_packages(),
     include_package_data=True,
     install_requires=["tqdm", "ffmpeg-python", "lxml", "requests", "xmler", "PyQt5", "PyQt5-sip"],
