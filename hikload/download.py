@@ -78,7 +78,7 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
-    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, default=True,
+    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, default=False,
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
     args = parser.parse_args()
     return args
@@ -163,20 +163,22 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
     channelList = server.Streaming.getChannels()
     channelids = []
     channels = []
-    if args.photos:
-        for channel in channelList['StreamingChannelList']['StreamingChannel']:
-            if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
-                # Force looking at the hidden 103 channel for the photos
-                channel['id'] = str(int(channel['id'])+2)
-                channelids.append(channel['id'])
-                channels.append(channel)
-        logging.info("Found channels %s" % channelids)
+    if args.cameras:
+        for cid in args.cameras:
+            channelids.append(cid)
+            channels.append({
+                'id': str(cid),
+                'channelName': str(cid),
+            })
     else:
         for channel in channelList['StreamingChannelList']['StreamingChannel']:
-            if (int(channel['id']) % 10 == 1) and (args.cameras is None or channel['id'] in args.cameras):
+            if (int(channel['id']) % 10 == 1):
+                if args.photos:
+                    # Force looking at the hidden 103 channel for the photos
+                    channel['id'] = str(int(channel['id'])+2)
                 channelids.append(channel['id'])
                 channels.append(channel)
-        logging.info("Found channels %s" % channelids)
+            logging.info("Found channels %s" % channelids)
 
     downloadQueue = []
     for channel in channels:
