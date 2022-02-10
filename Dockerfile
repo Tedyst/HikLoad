@@ -6,5 +6,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 ENV RUNNING_IN_DOCKER TRUE
-COPY . .
-ENTRYPOINT ["python", "download.py"]
+COPY main.py setup.py README.md /app/
+COPY hikload /app/hikload
+ENTRYPOINT ["python", "main.py"]
