@@ -5,3 +5,4 @@ MANIFEST
 hikload.egg-info
 .vscode
 build
+*url.txt
