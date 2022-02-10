@@ -160,7 +160,6 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
 
 def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Recording]:
     start_time = time.perf_counter()
-    channelList = server.Streaming.getChannels()
     channelids = []
     channels = []
     if args.cameras:
@@ -171,6 +170,7 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                 'channelName': str(cid),
             })
     else:
+        channelList = server.Streaming.getChannels()
         for channel in channelList['StreamingChannelList']['StreamingChannel']:
             if (int(channel['id']) % 10 == 1):
                 if args.photos:
