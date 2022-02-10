@@ -1,4 +1,9 @@
-from PyQt5 import QtWidgets, uic, QtGui
+GUI = True
+try:
+    from PyQt5 import QtWidgets, uic, QtGui
+except:
+    print("Disabling GUI since PyQt5 is not installed")
+    GUI = False
 import sys
 import os
 import logging
@@ -227,4 +232,7 @@ def main(args=None):
     window.show()
 
 if __name__ == '__main__':
-    main()
+    if GUI == False:
+        print("PyQt5 is not installed, can not run GUI")
+    else:
+        main()
