@@ -6,7 +6,9 @@ A collection of short Python scripts that utilize the ISAPI specification for Hi
 
 If you want to use the new interface written in Qt, you can use the command `hikload-qt` after installing using one of the recommended methods (only pip and source). 
 
-![The startup popup](docs/startup.png)
+![The Startup popup](docs/startup.png)
+
+![The Main Window](docs/mainwindow.png)
 
 ## Using the terminal
 
