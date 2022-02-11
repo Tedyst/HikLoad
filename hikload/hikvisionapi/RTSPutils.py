@@ -53,9 +53,12 @@ def downloadRTSP(url: str, videoName: str, seconds: int = 9999999, debug: bool =
             logger.warning("%s already exists" % videoName)
             return
         os.remove(videoName)
-    if not debug:
-        return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
-    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
+    try:
+        return ffmpeg.run(stream, capture_stdout=debug, capture_stderr=debug)
+    except ffmpeg.Error as e:
+        logging.error('stdout:', e.stdout.decode('utf8'))
+        logging.error('stderr:', e.stderr.decode('utf8'))
+        raise e
 
 
 def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = False, skipSeconds: int = 0, fileFormat: str = "mp4", forceTranscode: bool = False):
@@ -103,12 +106,12 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
     except AttributeError:
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
-    if not debug:
-        ffmpeg.run(stream, capture_stdout=True,
-                   capture_stderr=True, overwrite_output=True)
-    else:
-        ffmpeg.run(stream, capture_stdout=False,
-                   capture_stderr=False, overwrite_output=True)
+    try:
+        ffmpeg.run(stream, capture_stdout=debug, capture_stderr=debug, overwrite_output=True)
+    except ffmpeg.Error as e:
+        logging.error('stdout:', e.stdout.decode('utf8'))
+        logging.error('stderr:', e.stderr.decode('utf8'))
+        raise e
     os.remove(videoName)
     os.rename(newname, videoName)
 
@@ -155,6 +158,9 @@ def downloadRTSPOnlyFrames(url: str, videoName: str, modulo: int, seconds: int =
             logger.warning("%s already exists" % videoName)
             return
         os.remove(videoName)
-    if not debug:
-        return ffmpeg.run(stream, capture_stdout=True, capture_stderr=True)
-    return ffmpeg.run(stream, capture_stdout=False, capture_stderr=False)
+    try:
+        return ffmpeg.run(stream, capture_stdout=debug, capture_stderr=debug)
+    except ffmpeg.Error as e:
+        logging.error('stdout:', e.stdout.decode('utf8'))
+        logging.error('stderr:', e.stderr.decode('utf8'))
+        raise e
