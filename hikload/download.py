@@ -126,18 +126,20 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
                 protocol=False, credentials=True))
             hikvisionapi.downloadRTSPOnlyFrames(
                 url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
-        except ffmpeg.Error:
+        except ffmpeg.Error as e:
             logging.error(
                 "Could not download %s. Try to remove --frames." % name)
+            logging.error(e)
     if args.ffmpeg:
         try:
             url = url.replace(server.host, server.address(
                 protocol=False, credentials=True))
             hikvisionapi.downloadRTSP(
                 url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
-        except ffmpeg.Error:
+        except ffmpeg.Error as e:
             logging.error(
                 "Could not download %s. Try to remove --fmpeg." % name)
+            logging.error(e)
     else:
         if args.folders:
             temporaryname = "%s.mp4" % filename
@@ -149,9 +151,10 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             hikvisionapi.processSavedVideo(
                 temporaryname, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
                 fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
-        except ffmpeg.Error:
+        except ffmpeg.Error as e:
             logging.error(
                 "Could not transcode %s. Try to remove --forcetranscoding." % name)
+            logging.error(e)
     if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
         os.chmod(name, 0o777)
     end_time = time.perf_counter()
