@@ -173,15 +173,19 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                 'channelName': str(cid),
             })
     else:
-        channelList = server.Streaming.getChannels()
-        for channel in channelList['StreamingChannelList']['StreamingChannel']:
-            if (int(channel['id']) % 10 == 1):
-                if args.photos:
-                    # Force looking at the hidden 103 channel for the photos
-                    channel['id'] = str(int(channel['id'])+2)
-                channelids.append(channel['id'])
-                channels.append(channel)
-            logging.info("Found channels %s" % channelids)
+        try:
+            channelList = server.Streaming.getChannels()
+            for channel in channelList['StreamingChannelList']['StreamingChannel']:
+                if (int(channel['id']) % 10 == 1):
+                    if args.photos:
+                        # Force looking at the hidden 103 channel for the photos
+                        channel['id'] = str(int(channel['id'])+2)
+                    channelids.append(channel['id'])
+                    channels.append(channel)
+                logging.info("Found channels %s" % channelids)
+        except HikvisionException as e:
+            logging.error("Could not get channel list. If you still want to continue, add the argument --cameras with the channel ids you want to download.")
+            raise e
 
     downloadQueue = []
     for channel in channels:
@@ -213,8 +217,9 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                     cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
                 logging.info("Found %s recordings for channel %s" %
                              (recordings['CMSearchResult']['numOfMatches'], cid))
-        except hikvisionapi.classes.HikvisionException:
+        except hikvisionapi.classes.HikvisionException as e:
             logging.error("Could not get recordings for channel %s" % cid)
+            logging.error(e)
             continue
 
         # This loops from every recording
