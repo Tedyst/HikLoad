@@ -4,7 +4,7 @@ import os
 import logging
 from io import StringIO
 import threading
-from .download import parse_args, search_for_recordings, search_for_recordings_mock, create_folder_and_chdir, download_recording
+from .download import search_for_recordings, search_for_recordings_mock, create_folder_and_chdir, download_recording
 
 from hikload.hikvisionapi.classes import HikvisionServer
 log_stream = StringIO()
@@ -225,7 +225,4 @@ def main(args=None):
     window.show()
 
 if __name__ == '__main__':
-    if GUI == False:
-        print("PyQt5 is not installed, can not run GUI")
-    else:
-        main()
+    main()
