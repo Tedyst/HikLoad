@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List
 from io import StringIO
+import sys
 
 import ffmpeg
 import tqdm
@@ -78,7 +79,8 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
-    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, 
+                        default=bool(getattr(sys, 'frozen', False)), # If running under PyInstaller, use the UI
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
     args = parser.parse_args()
     return args
