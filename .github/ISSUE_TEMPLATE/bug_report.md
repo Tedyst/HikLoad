@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is. If it is an error, please give the output when using the  argument `--debug`.
+A clear and concise description of what the bug is. If it is an error, please give the output when using the argument `--debug`, or the Debug mode if using `hikload-qt`.
 
 **To Reproduce**
 The arguments used when running the program/the values put into the GUI if using hikload-qt.
