@@ -147,7 +147,13 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             temporaryname = "%s.mp4" % filename
         else:
             temporaryname = "%s-%s.mp4" % (filename, cid)
-        r = server.ContentMgmt.search.downloadURI(url)
+        try:
+            r = server.ContentMgmt.search.downloadURI(url)
+        except hikvisionapi.HikvisionError as e:
+            logging.error(
+                "Could not download %s. Try to add --ffmpeg." % name)
+            logging.error(e)
+            return
         open(temporaryname, 'wb').write(r.content)
         try:
             hikvisionapi.processSavedVideo(
@@ -252,7 +258,9 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
     logging.info(f"Found {len(downloadQueue)} files to download in {run_time:.2f} seconds")
     return downloadQueue
 
-def search_for_recordings_mock() -> List[Recording]:
+def search_for_recordings_mock(args) -> List[Recording]:
+    logger = logging.getLogger('hikload')
+    logger.debug(f"{args=}")
     return [
         Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
         Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
@@ -340,7 +348,7 @@ def run(args):
     with logging_redirect_tqdm():
         server.test_connection()
         if args.mock:
-            downloadQueue = search_for_recordings_mock()
+            downloadQueue = search_for_recordings_mock(args)
             args.skipdownload = True
         else:
             downloadQueue = search_for_recordings(server, args)

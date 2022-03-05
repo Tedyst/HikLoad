@@ -27,13 +27,16 @@ class downloadThread(threading.Thread):
         self.recordings = None
         self.finished = 0
 
+        if not args:
+            raise ValueError("args is not set correctly")
+
     def run(self):
         logger = logging.getLogger('hikload')
         logger.info("download thread started")
-        logger.debug("args: %s", self.args)
+        logger.debug(f"{self.args=}")
 
         if self.args.mock:
-            recordings = search_for_recordings_mock()
+            recordings = search_for_recordings_mock(self.args)
         else:
             recordings = search_for_recordings(self.args)
         self.recordings = recordings
