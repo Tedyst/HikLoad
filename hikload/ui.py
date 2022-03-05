@@ -35,6 +35,11 @@ class downloadThread(threading.Thread):
         logger.info("download thread started")
         logger.debug(f"{self.args=}")
 
+        if self.args.debug:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+
         if self.args.mock:
             recordings = search_for_recordings_mock(self.args)
         else:
