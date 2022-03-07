@@ -61,8 +61,13 @@ class _search():
                                      data=data, rawResponse=True)
         return result
 
+    def get_download_capabilities(self):
+        result = hikvisionapi.getXML(self.parent, "ContentMgmt/download/capabilities")
+        return result
+
     def downloadURI(self, playbackURI):
-        dictdata = hikvisionapi.xml2dict(b"""<downloadRequest>
+        dictdata = hikvisionapi.xml2dict(b"""<downloadRequest version="1.0"
+            xmlns="http://www.isapi.org/ver20/XMLSchema">
         <playbackURI></playbackURI>
         </downloadRequest>
         """)

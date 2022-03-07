@@ -150,6 +150,25 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
         try:
             r = server.ContentMgmt.search.downloadURI(url)
         except hikvisionapi.HikvisionError as e:
+            try:
+                supports = server.ContentMgmt.search.get_download_capabilities()
+                logging.debug(f'Device capabilities: {supports}')
+                if supports['DownloadAbility']['isSupportDownloadbyFileName'] == 'false':
+                    logging.error("Downloading by file name is not supported for this device.")
+                    logging.error("Try to add --ffmpeg to force recording the videos.")
+                    logging.error(e)
+                    return
+                if supports['DownloadAbility']['isSupportDownloadbyTime'] == 'false':
+                    logging.error("Downloading by time is not supported for this device.")
+                    logging.error("Try to add --ffmpeg to force recording the videos.")
+                    logging.error(e)
+                    return
+            except (hikvisionapi.HikvisionError, TypeError) as e:
+                logging.error(
+                    "Could not get download capabilities. The device dosen't seem to support getting capabilities.")
+                logging.error("Try to add --ffmpeg to force recording the videos.")
+                logging.error(e)
+                return
             logging.error(
                 "Could not download %s. Try to add --ffmpeg." % name)
             logging.error(e)
