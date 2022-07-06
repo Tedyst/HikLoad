@@ -3,7 +3,7 @@ charset-normalizer==2.0.6
 ffmpeg-python==0.2.0
 future==0.18.2
 idna==3.2
-lxml==4.6.5
+lxml==4.9.1
 pyee==8.2.2
 requests==2.26.0
 tqdm==4.62.3
