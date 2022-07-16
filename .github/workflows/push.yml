@@ -33,9 +33,8 @@ jobs:
       - name: Package the app using PyInstaller
         run: |
           pip install pipenv
-          pipenv install --deploy
-          pip install PyInstaller
-          pyinstaller hikload.spec
+          pipenv install --dev --deploy
+          pipenv run pyinstaller hikload.spec
 
       - uses: actions/upload-artifact@v2
         with:
