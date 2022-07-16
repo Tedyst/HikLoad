@@ -68,6 +68,7 @@ class HikvisionServer:
         except ConnectionError as e:
             raise HikvisionException("Error while testing connection: %s" % e)
 
+
 class Hasher(dict):
     # https://stackoverflow.com/a/3405143/190597
     def __missing__(self, key):

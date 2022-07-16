@@ -1,6 +1,6 @@
 name: Package Application
 
-on: 
+on:
   push:
     branches:
       - "master"
@@ -13,25 +13,31 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, arch: x64, name: linux, filename: 'hikload' }
-          - { os: windows-latest, arch: x64, name: windows, filename: 'hikload.exe' }
+          - { os: ubuntu-latest, arch: x64, name: linux, filename: "hikload" }
+          - {
+              os: windows-latest,
+              arch: x64,
+              name: windows,
+              filename: "hikload.exe",
+            }
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-        architecture: ${{ matrix.config.arch }}
+      - uses: actions/checkout@v2
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+          architecture: ${{ matrix.config.arch }}
 
-    - name: Package the app using PyInstaller
-      run: |
-        pip install -r requirements.txt
-        pip install PyInstaller
-        pyinstaller hikload.spec
+      - name: Package the app using PyInstaller
+        run: |
+          pip install pipenv
+          pipenv install --deploy
+          pip install PyInstaller
+          pyinstaller hikload.spec
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
-        path: dist/${{ matrix.config.filename }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+          path: dist/${{ matrix.config.filename }}

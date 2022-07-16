@@ -53,45 +53,46 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, arch: x64, name: linux, extension: '' }
-          - { os: windows-latest, arch: x64, name: windows, extension: '.exe' }
+          - { os: ubuntu-latest, arch: x64, name: linux, extension: "" }
+          - { os: windows-latest, arch: x64, name: windows, extension: ".exe" }
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-        architecture: ${{ matrix.config.arch }}
-    - name: Package the app using PyInstaller
-      run: |
-        pip install -r requirements.txt
-        pip install PyInstaller
-        pyinstaller hikload.spec
+      - uses: actions/checkout@v2
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+          architecture: ${{ matrix.config.arch }}
+      - name: Package the app using PyInstaller
+        run: |
+          pip install pipenv
+          pipenv install --deploy
+          pip install PyInstaller
+          pyinstaller hikload.spec
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
-        path: dist/hikload${{ matrix.config.extension }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
+          path: dist/hikload${{ matrix.config.extension }}
 
-    - name: Download upload_url
-      uses: actions/download-artifact@v1
-      with:
-        name: upload_url
-    - id: releaseurl
-      run: |
-        echo "::set-output name=url::$(cat upload_url/url.txt)"
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.releaseurl.outputs.url }}
-        asset_path: dist/hikload${{ matrix.config.extension }}
-        asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}
-        asset_content_type: application/octet-stream
+      - name: Download upload_url
+        uses: actions/download-artifact@v1
+        with:
+          name: upload_url
+      - id: releaseurl
+        run: |
+          echo "::set-output name=url::$(cat upload_url/url.txt)"
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.releaseurl.outputs.url }}
+          asset_path: dist/hikload${{ matrix.config.extension }}
+          asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}
+          asset_content_type: application/octet-stream
 
   pypipublish:
     runs-on: ubuntu-latest
@@ -99,43 +100,43 @@ jobs:
     name: Package the application and publish it to PyPi
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
 
-    - name: Download upload_url
-      uses: actions/download-artifact@v1
-      with:
-        name: upload_url
-    - id: releaseurl
-      run: |
-        echo "::set-output name=url::$(cat upload_url/url.txt)"
+      - name: Download upload_url
+        uses: actions/download-artifact@v1
+        with:
+          name: upload_url
+      - id: releaseurl
+        run: |
+          echo "::set-output name=url::$(cat upload_url/url.txt)"
 
-    - name: Find the old version and replace it with the newly released one
-      uses: jacobtomlinson/gha-find-replace@v2
-      with:
-        find: "\\d\\.\\d\\.\\d"
-        replace: ${{ steps.releaseurl.outputs.url }}
-        include: "setup.py"
-        regex: true
-    - uses: EndBug/add-and-commit@v8
-      with:
-        default_author: github_actions
-        message: 'ci: increment version in setup.py'
+      - name: Find the old version and replace it with the newly released one
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          find: "\\d\\.\\d\\.\\d"
+          replace: ${{ steps.releaseurl.outputs.url }}
+          include: "setup.py"
+          regex: true
+      - uses: EndBug/add-and-commit@v8
+        with:
+          default_author: github_actions
+          message: "ci: increment version in setup.py"
 
-    - name: Build package
-      run: python -m build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Build package
+        run: python -m build
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
   dockerpublish:
     runs-on: ubuntu-latest

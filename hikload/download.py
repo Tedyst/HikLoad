@@ -22,6 +22,7 @@ class Recording():
         self.cname = cname
         self.url = url
         self.startTime = startTime
+
     def __str__(self) -> str:
         return "{}-{}".format(self.cname, self.startTime)
 
@@ -47,8 +48,8 @@ def parse_args():
                         help='create a separate folder per camera/duration (default: disabled)')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, dest="debug",
                         help='enable debug mode (default: false)')
-    parser.add_argument('--videoformat', dest="videoformat", default="mkv", choices=['mkv', 'mp4', 'avi'],
-                        help='specify video format (default: mkv)')
+    parser.add_argument('--videoformat', dest="videoformat", default="mp4", choices=['mkv', 'mp4', 'avi'],
+                        help='specify video format (default: mp4)')
     parser.add_argument('--downloads', dest="downloads", default=os.path.join(os.getcwd(), "Downloads"),
                         help='the downloads folder (default: "Downloads")')
     parser.add_argument('--frames', dest="frames", type=int,
@@ -79,8 +80,9 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
-    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction, 
-                        default=bool(getattr(sys, 'frozen', False)), # If running under PyInstaller, use the UI
+    parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
+                        # If running under PyInstaller, use the UI
+                        default=bool(getattr(sys, 'frozen', False)),
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
     args = parser.parse_args()
     return args
@@ -154,19 +156,24 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
                 supports = server.ContentMgmt.search.get_download_capabilities()
                 logging.debug(f'Device capabilities: {supports}')
                 if supports['DownloadAbility']['isSupportDownloadbyFileName'] == 'false':
-                    logging.error("Downloading by file name is not supported for this device.")
-                    logging.error("Try to add --ffmpeg to force recording the videos.")
+                    logging.error(
+                        "Downloading by file name is not supported for this device.")
+                    logging.error(
+                        "Try to add --ffmpeg to force recording the videos.")
                     logging.error(e)
                     return
                 if supports['DownloadAbility']['isSupportDownloadbyTime'] == 'false':
-                    logging.error("Downloading by time is not supported for this device.")
-                    logging.error("Try to add --ffmpeg to force recording the videos.")
+                    logging.error(
+                        "Downloading by time is not supported for this device.")
+                    logging.error(
+                        "Try to add --ffmpeg to force recording the videos.")
                     logging.error(e)
                     return
             except (hikvisionapi.HikvisionError, TypeError) as e:
                 logging.error(
                     "Could not get download capabilities. The device dosen't seem to support getting capabilities.")
-                logging.error("Try to add --ffmpeg to force recording the videos.")
+                logging.error(
+                    "Try to add --ffmpeg to force recording the videos.")
                 logging.error(e)
                 return
             logging.error(
@@ -175,6 +182,7 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             return
         open(temporaryname, 'wb').write(r.content)
         try:
+            logging.info(args)
             hikvisionapi.processSavedVideo(
                 temporaryname, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
                 fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
@@ -187,6 +195,7 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
     end_time = time.perf_counter()
     run_time = end_time - start_time
     logging.info(f"Finished downloading {name} in {run_time:.2f} seconds")
+
 
 def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Recording]:
     start_time = time.perf_counter()
@@ -211,7 +220,8 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                     channels.append(channel)
                 logging.info("Found channels %s" % channelids)
         except HikvisionException as e:
-            logging.error("Could not get channel list. If you still want to continue, add the argument --cameras with the channel ids you want to download.")
+            logging.error(
+                "Could not get channel list. If you still want to continue, add the argument --cameras with the channel ids you want to download.")
             raise e
 
     downloadQueue = []
@@ -260,11 +270,11 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
         result = []
         for i in recordinglist:
             result.append(Recording(
-                cid=cid, 
-                cname=cname, 
+                cid=cid,
+                cname=cname,
                 url=i['mediaSegmentDescriptor']['playbackURI'],
                 startTime=i['timeSpan']['startTime']
-                ))
+            ))
             logging.debug("Found recording type %s on channel %s" % (
                 i['mediaSegmentDescriptor']['contentType'], cid
             ))
@@ -274,20 +284,29 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
         downloadQueue.extend(result)
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    logging.info(f"Found {len(downloadQueue)} files to download in {run_time:.2f} seconds")
+    logging.info(
+        f"Found {len(downloadQueue)} files to download in {run_time:.2f} seconds")
     return downloadQueue
+
 
 def search_for_recordings_mock(args) -> List[Recording]:
     logger = logging.getLogger('hikload')
     logger.debug(f"{args=}")
     return [
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:48Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:49Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:50Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1", startTime="2021-12-19T09:04:51Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:48Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:49Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:50Z", url="https://tedyst.ro"),
+        Recording(cid=1, cname="Channel 1",
+                  startTime="2021-12-19T09:04:51Z", url="https://tedyst.ro"),
     ]
+
 
 def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj: Recording, original_path):
     try:
@@ -345,13 +364,17 @@ def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueu
     for recordingobj in tqdm.tqdm(downloadQueue):
         download_recording(server, args, recordingobj, original_path)
 
+
 def run(args):
     if args.server == "" or args.server == None:
-        raise HikvisionException("No server specified! You need to specify a server with --server")
+        raise HikvisionException(
+            "No server specified! You need to specify a server with --server")
     if args.username == "" or args.username == None:
-        raise HikvisionException("No username specified! You need to specify a username with --username")
+        raise HikvisionException(
+            "No username specified! You need to specify a username with --username")
     if args.password == "" or args.password == None:
-        raise HikvisionException("No password specified! You need to specify a password with --password")
+        raise HikvisionException(
+            "No password specified! You need to specify a password with --password")
 
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password)

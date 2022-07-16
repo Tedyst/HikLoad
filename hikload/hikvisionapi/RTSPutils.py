@@ -107,7 +107,8 @@ def processSavedVideo(videoName: str, seconds: int = 9999999, debug: bool = Fals
         raise Exception(
             "The version of ffmpeg used is wrong! Be sure to uninstall ffmpeg using pip and install ffmpeg-python or use a virtualenv! For more information see the README!")
     try:
-        ffmpeg.run(stream, capture_stdout=debug, capture_stderr=debug, overwrite_output=True)
+        ffmpeg.run(stream, capture_stdout=debug,
+                   capture_stderr=debug, overwrite_output=True)
     except ffmpeg.Error as e:
         logging.error('stdout:', e.stdout.decode('utf8'))
         logging.error('stderr:', e.stderr.decode('utf8'))

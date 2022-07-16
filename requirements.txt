@@ -1,14 +1,14 @@
-certifi==2021.5.30
-charset-normalizer==2.0.6
+-i https://pypi.org/simple
+certifi==2022.6.15; python_version >= '3.6'
+charset-normalizer==2.1.0; python_version >= '3.6'
 ffmpeg-python==0.2.0
-future==0.18.2
-idna==3.2
-lxml==4.6.5
-pyee==8.2.2
-requests==2.26.0
-tqdm==4.62.3
-urllib3==1.26.7
+future==0.18.2; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'
+idna==3.3; python_version >= '3.5'
+lxml==4.9.1
+pyqt5==5.15.7
+pyqt5-qt5==5.15.2
+pyqt5-sip==12.11.0; python_version >= '3.7'
+requests==2.28.1
+tqdm==4.64.0
+urllib3==1.26.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5' and python_version < '4'
 xmler==0.2.0
-PyQt5==5.15.6
-PyQt5-Qt5==5.15.2
-PyQt5-sip==12.9.0

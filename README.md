@@ -110,16 +110,13 @@ hikload --server 192.168.10.239 --user username --password password --cameras=20
 Due to [common problems](https://github.com/kkroening/ffmpeg-python/issues/174#issuecomment-561546739) found while installing the dependencies needed by this project, it is recommended to use a python virtualenv. Here is how to setup one:
 
 ```bash
-pip install virtualenv
-virtualenv venv
-source venv/bin/activate # On Linux/Mac OS
-venv\Scripts\activate    # On Windows
-pip install -r requirements.txt
+pip install pipenv
+pipenv install --dev
+pipenv shell
 ```
 
 And everytime you restart the terminal and want to use the virtualenv, you need to run these commands:
 
 ```bash
-source venv/bin/activate # On Linux/Mac OS
-venv\Scripts\activate    # On Windows
+pipenv shell
 ```

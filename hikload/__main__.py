@@ -3,6 +3,7 @@ import logging
 import signal
 import sys
 
+
 def main_ui(args=None):
     try:
         from .ui import main as ui_main
@@ -16,6 +17,7 @@ def main_ui(args=None):
         logging.error(e)
         raise e
 
+
 def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     args = parse_args()
@@ -28,6 +30,7 @@ def main():
     except KeyboardInterrupt:
         logging.info("Exited by user")
         sys.exit(0)
+
 
 if __name__ == '__main__':
     main()

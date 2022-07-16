@@ -62,7 +62,8 @@ class _search():
         return result
 
     def get_download_capabilities(self):
-        result = hikvisionapi.getXML(self.parent, "ContentMgmt/download/capabilities")
+        result = hikvisionapi.getXML(
+            self.parent, "ContentMgmt/download/capabilities")
         return result
 
     def downloadURI(self, playbackURI):
