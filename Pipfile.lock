@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2778a6a04391a4aef66631135656f78ad49fb75e21f72dedb6d3bdfd570f427b"
+            "sha256": "611586a2a245a70eb13e3275ede1479a00f1d56531e695d0e176a4c8b959f5b8"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -21,7 +21,7 @@
                 "sha256:84c85a9078b11105f04f3036a9482ae10e4621616db313fe045dd24743a0820d",
                 "sha256:fe86415d55e84719d75f8b69414f6438ac3547d2078ab91b67e779ef69378412"
             ],
-            "markers": "python_version >= '3.6'",
+            "markers": "python_full_version >= '3.6.0'",
             "version": "==2022.6.15"
         },
         "charset-normalizer": {
@@ -29,7 +29,7 @@
                 "sha256:5189b6f22b01957427f35b6a08d9a0bc45b46d3788ef5a92e978433c7a35f8a5",
                 "sha256:575e708016ff3a5e3681541cb9d79312c416835686d054a23accb873b254f413"
             ],
-            "markers": "python_version >= '3.6'",
+            "markers": "python_full_version >= '3.6.0'",
             "version": "==2.1.0"
         },
         "ffmpeg-python": {
@@ -130,6 +130,13 @@
             ],
             "index": "pypi",
             "version": "==4.9.1"
+        },
+        "pefile": {
+            "hashes": [
+                "sha256:a5488a3dd1fd021ce33f969780b88fe0f7eebb76eb20996d7318f307612a045b"
+            ],
+            "index": "pypi",
+            "version": "==2022.5.30"
         },
         "pyqt5": {
             "hashes": [

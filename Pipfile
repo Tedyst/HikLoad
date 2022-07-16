@@ -11,6 +11,7 @@ lxml = "*"
 tqdm = "*"
 ffmpeg-python = "*"
 pywin32-ctypes = "*"
+pefile = "*"
 
 [dev-packages]
 pyinstaller = "*"
