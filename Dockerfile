@@ -1,9 +1,9 @@
-FROM python:3.9.7
+FROM python:3.10
 LABEL org.opencontainers.image.source https://github.com/Tedyst/HikLoad
 
 WORKDIR /app
 RUN pip install pipenv
-COPY Pipfile Pipfile.lock .
+COPY Pipfile Pipfile.lock ./
 RUN pipenv install --deploy
 
 ENV RUNNING_IN_DOCKER TRUE
