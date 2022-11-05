@@ -92,11 +92,11 @@ def parse_args():
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
     parser.add_argument('--videoname', dest="videoname", type=str, default="",
-                        help='name of the downloaded video(s). Does not suppress --lokaltimefilenames')
+                        help='name of the downloaded video(s). Does not suppress --localtimefilenames')
     parser.add_argument('--concat', dest="concat", action=argparse.BooleanOptionalAction,
                         help='enable concatenating downloaded vides into one file (channel-wise)')
     parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
-                        help='enable triming of the concatenated video. Does work only when --concat enabled')
+                        help='enable triming of the concatenated video. Does work only with --concat enabled')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
                         # If running under PyInstaller, use the UI
                         default=bool(getattr(sys, 'frozen', False)),
@@ -341,7 +341,8 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
         
         # Save channel metadata
         downloadDict[cid]["recordings"].extend(result)
-        downloadDict[cid]["minStartTime"] = downloadDict[cid]["recordings"][0].startTime
+        if downloadDict[cid]["recordings"]:
+            downloadDict[cid]["minStartTime"] = downloadDict[cid]["recordings"][0].startTime
         downloadDict["num_videos"] += downloadDict[cid]["num_videos"]
         downloadDict["num_channels"] += 1
 
@@ -448,11 +449,12 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
 
 
 def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadDict: dict):
+    logger = logging.getLogger('hikload')
     if args.downloads:
         create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
 
-    print("Downloading recordings...")
+    logger.info("Downloading recordings...")
     with tqdm.tqdm(total=downloadDict["num_videos"]) as progress_bar:
         for cid, channel_metadata in downloadDict.items():
             try:
@@ -467,27 +469,18 @@ def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadDict
 
 
 def process_recordings_with_ffmpeg(args, downloadDict: dict):
-    
+    logger = logging.getLogger('hikload')
     # Check for max duration of the video and if it's too long, promt user
     max_duration = timedelta(seconds=0)
     for cid, channel_metadata in downloadDict.items():
         if not isinstance(channel_metadata, dict):
             continue
         max_duration = max (max_duration, channel_metadata["duration"])
-    prompted = max_duration > timedelta(hours=10)
-    while prompted:
-        answer = input("You are about to concatenate {} of videos. This could result in creating huge amounts of data being created. Do you want to continue? Y[es] / N[o]".format(max_duration))
-        if answer.lower() in ["y","yes"]:
-            prompted = False
-        elif answer.lower() in ["n","no"]:
-            return
-        else:
-            print("Please, answer either Y[es] or N[o]")
-    
+
     if args.downloads:
         create_folder_and_chdir(args.downloads)
-  
-    print("Concatenating videos..")
+
+    logger.info("Concatenating videos..")
     with tqdm.tqdm(total=downloadDict["num_channels"]) as progress_bar:
         for cid, channel_metadata in downloadDict.items():
             if not isinstance(channel_metadata, dict):
@@ -497,7 +490,8 @@ def process_recordings_with_ffmpeg(args, downloadDict: dict):
 
             if args.trim:
                 cut_filename = cut_video(concat_filename, channel_metadata)
-            
+                logger.info("Trimmed video saved as %s" % cut_filename)
+
             progress_bar.update()
 
 
