@@ -11,6 +11,7 @@ from PyQt5 import QtGui, QtWidgets, uic
 from hikload.hikvisionapi.classes import HikvisionServer
 from hikload.uifiles.MainWindow import Ui_MainWindow
 from hikload.uifiles.Startup import Ui_Startup
+from hikload.video import concat_channel_videos, cut_video
 
 from .download import (create_folder_and_chdir, download_recording,
                        search_for_recordings, search_for_recordings_mock)
@@ -47,31 +48,43 @@ class downloadThread(threading.Thread):
             recordings = search_for_recordings(self.server, self.args)
         self.recordings = recordings
 
-        self.window.ui.progressBar.setMaximum(len(recordings))
+        self.window.ui.progressBar.setMaximum(recordings.get('num_videos', 1))
         self.window.ui.progressBar.setValue(0)
         create_folder_and_chdir(self.args.downloads)
         original_path = os.path.abspath(os.getcwd())
 
         self.window.ui.treeWidget.clear()
         i = 0
-        for recording in recordings:
-            item = QtWidgets.QTreeWidgetItem([str(recording)])
-            self.window.ui.treeWidget.insertTopLevelItems(i, [item])
-            i += 1
+        for _, channel in self.recordings["channels"].items():
+            for recording in channel["recordings"]:
+                item = QtWidgets.QTreeWidgetItem([str(recording)])
+                self.window.ui.treeWidget.insertTopLevelItems(i, [item])
+                i += 1
 
-        for recordingobj in recordings:
-            if self.running is False:
-                return
-            self.window.ui.progressBar.setValue(self.finished)
+        for _, channel in self.recordings["channels"].items():
+            for recording in channel["recordings"]:
+                if self.running is False:
+                    return
+                self.window.ui.progressBar.setValue(self.finished)
+                download_recording(self.server, self.args, recording, original_path)
+                self.window.ui.treeWidget.takeTopLevelItem(0)
 
-            download_recording(self.server, self.args,
-                               recordingobj, original_path)
-            self.window.ui.treeWidget.takeTopLevelItem(0)
-
-            self.finished += 1
+                self.finished += 1
         self.window.ui.progressBar.setValue(len(recordings))
+        self.window.ui.progressBar.setMaximum(len(recordings))
         logger.info("Finished downloading all recordings")
-        logger.info("download thread finished")
+
+        if self.args.concat:
+            logger.info("Concatenating videos..")
+            for cid, channel_metadata in self.recordings["channels"].items():
+                if not isinstance(channel_metadata, dict):
+                    continue
+
+                concat_filename = concat_channel_videos(channel_metadata, cid, self.args)
+
+                if self.args.trim:
+                    cut_filename = cut_video(concat_filename, channel_metadata)
+                    logger.info("Trimmed video saved as %s" % cut_filename)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -157,6 +170,8 @@ class Startup(QtWidgets.QDialog):
         self.ui.end_date.setDateTime(args.endtime)
         self.ui.debug.setChecked(bool(args.debug))
         self.ui.force.setChecked(bool(args.force))
+        self.ui.concat.setChecked(bool(args.concat))
+        self.ui.trim.setChecked(bool(args.trim))
         self.ui.localtime.setChecked(bool(args.localtimefilenames))
         self.ui.ffmpeg.setChecked(bool(args.ffmpeg))
         self.ui.forcetranscoding.setChecked(bool(args.forcetranscoding))
@@ -175,6 +190,8 @@ class Startup(QtWidgets.QDialog):
         self.args.endtime = self.ui.end_date.dateTime().toPyDateTime()
         self.args.debug = self.ui.debug.isChecked()
         self.args.force = self.ui.force.isChecked()
+        self.args.concat = self.ui.concat.isChecked()
+        self.args.trim = self.ui.trim.isChecked()
         self.args.localtimefilenames = self.ui.localtime.isChecked()
         self.args.ffmpeg = self.ui.ffmpeg.isChecked()
         self.args.forcetranscoding = self.ui.forcetranscoding.isChecked()
@@ -185,9 +202,9 @@ class Startup(QtWidgets.QDialog):
         return self.args
 
     def select_download_folder(self):
-        file = str(QtWidgets.QFileDialog.getExistingDirectory(
+        f = str(QtWidgets.QFileDialog.getExistingDirectory(
             self, "Select Directory"))
-        self.ui.downloads_folder.setText(file)
+        self.ui.downloads_folder.setText(f)
 
     def start_downloading(self):
         self.skipclosing = True

@@ -1,8 +1,8 @@
-import ffmpeg
-import os
 import logging
+import os
+from datetime import datetime, timedelta
 
-from datetime import datetime
+import ffmpeg
 
 logger = logging.getLogger('hikload')
 
@@ -80,7 +80,10 @@ def cut_video(video_name, channel_metadata: dict):
         channel_metadata["startTime"], "%Y-%m-%dT%H:%M:%SZ")
     minstarttime = datetime.strptime(
         channel_metadata["minStartTime"], "%Y-%m-%dT%H:%M:%SZ")
-    trim_start =  starttime - minstarttime 
+    trim_start =  starttime - minstarttime
+
+    if trim_start < timedelta(0):
+        return
 
     outname = video_name.replace(".", "_cut.")
     try:
