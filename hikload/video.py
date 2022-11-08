@@ -1,12 +1,15 @@
-import ffmpeg
-import os
 import logging
+import os
+from datetime import datetime, timedelta
 
-from datetime import datetime
+import ffmpeg
 
 logger = logging.getLogger('hikload')
 
 def concat_channel_videos(channel_metadata: dict, cid, args):
+    if not channel_metadata["filenames"]:
+        return
+
     # Create temporary text file as the FFmpeg requires it
     with open("tmp_list.txt", "w") as fl:
 
@@ -59,32 +62,48 @@ def concat_channel_videos(channel_metadata: dict, cid, args):
     # Clean up after yourself
     os.remove("tmp_list.txt")
     for filename in channel_metadata["filenames"]:
-        os.remove(filename)
+        try:
+            os.remove(filename)
+        except FileNotFoundError:
+            pass
 
     logging.debug("Recordings of the channel {} concatenated into video {}".format(cid, outname))
     return outname
 
 
 def cut_video(video_name, channel_metadata: dict):
+    if not channel_metadata["recordings"]:
+        return
+
     # Cut videos to required duration
     starttime = datetime.strptime(
         channel_metadata["startTime"], "%Y-%m-%dT%H:%M:%SZ")
     minstarttime = datetime.strptime(
         channel_metadata["minStartTime"], "%Y-%m-%dT%H:%M:%SZ")
-    trim_start =  starttime - minstarttime 
-    
+    trim_start =  starttime - minstarttime
+
+    if trim_start < timedelta(0):
+        return
+
     outname = video_name.replace(".", "_cut.")
-    (
-        ffmpeg
-        .input(video_name, ss=trim_start, t=channel_metadata["duration"])
-        .output(outname, codec='copy')
-        .overwrite_output()
-        .global_args('-loglevel', 'error')
-        .run()
-    )
+    try:
+        (
+            ffmpeg
+            .input(video_name, ss=trim_start, t=channel_metadata["duration"])
+            .output(outname, codec='copy')
+            .overwrite_output()
+            .global_args('-loglevel', 'error')
+            .run()
+        )
+    except ffmpeg._run.Error as e:
+        logger.error("Error while cutting video {}: {}".format(video_name, e))
+        return
 
-    # Clean up after yourself
-    os.remove(video_name)
+    try:
+        # Clean up after yourself
+        os.remove(video_name)
+    except FileNotFoundError:
+        pass
 
-    logging.debug("Video {} trimed into video".format(video_name, outname))
+    logging.debug("Video {} trimed into video {}".format(video_name, outname))
     return outname

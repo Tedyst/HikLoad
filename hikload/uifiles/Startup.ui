@@ -217,7 +217,7 @@
              <date>
               <year>2021</year>
               <month>12</month>
-              <day>29</day>
+              <day>28</day>
              </date>
             </property>
             <property name="calendarPopup">
@@ -241,7 +241,7 @@
              <date>
               <year>2022</year>
               <month>12</month>
-              <day>28</day>
+              <day>27</day>
              </date>
             </property>
             <property name="calendarPopup">
@@ -289,6 +289,20 @@
           <widget class="QCheckBox" name="forcetranscoding">
            <property name="text">
             <string>Force transcoding if downloading directly from server</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="concat">
+           <property name="text">
+            <string>Concatenate all recordings per camera</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="trim">
+           <property name="text">
+            <string>Trim recordings only to specified times</string>
            </property>
           </widget>
          </item>
@@ -351,6 +365,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="start_downloading_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Start downloading</string>
        </property>
