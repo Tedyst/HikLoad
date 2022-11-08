@@ -15,13 +15,24 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 import hikload.hikvisionapi as hikvisionapi
 from hikload.hikvisionapi.classes import HikvisionException
 
+from hikload.video import concat_channel_videos, cut_video
 
 class Recording():
-    def __init__(self, cid, cname, url, startTime):
+    def __init__(self, cid, cname, url, startTime, endTime=None):
         self.cid = cid
         self.cname = cname
         self.url = url
         self.startTime = startTime
+        self.endTime = endTime
+
+        if self.endTime is not None:
+            start = datetime.strptime(
+                self.startTime, "%Y-%m-%dT%H:%M:%SZ")
+            end = datetime.strptime(
+                self.endTime, "%Y-%m-%dT%H:%M:%SZ")
+            self.duration =  end - start
+        else:
+            self.duration = None
 
     def __str__(self) -> str:
         return "{}-{}".format(self.cname, self.startTime)
@@ -80,6 +91,12 @@ def parse_args():
                         help='enable experimental downloading of saved photos')
     parser.add_argument('--mock', dest="mock", action=argparse.BooleanOptionalAction,
                         help='enable mock mode  WARNING! This will not download anything from the server')
+    parser.add_argument('--videoname', dest="videoname", type=str, default="",
+                        help='name of the downloaded video(s). Does not suppress --lokaltimefilenames')
+    parser.add_argument('--concat', dest="concat", action=argparse.BooleanOptionalAction,
+                        help='enable concatenating downloaded vides into one file (channel-wise)')
+    parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
+                        help='enable triming of the concatenated video. Does work only when --concat enabled')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
                         # If running under PyInstaller, use the UI
                         default=bool(getattr(sys, 'frozen', False)),
@@ -224,7 +241,10 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                 "Could not get channel list. If you still want to continue, add the argument --cameras with the channel ids you want to download.")
             raise e
 
-    downloadQueue = []
+    downloadDict = {
+        "num_videos": 0,
+        "num_channels": 0,
+    }
     for channel in channels:
         cname = channel['channelName']
         cid = channel['id']
@@ -250,15 +270,26 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
                 logging.info("There are %s recordings in total for channel %s" %
                              (recordings['CMSearchResult']['numOfMatches'], cid))
             else:
-                recordings = server.ContentMgmt.search.getPastRecordingsForID(
-                    cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
+               
+                if args.concat:
+                    # List recordings around given time to estimate true duration
+                    # Would break if one recording is longer than a day. Could be solved
+                    # by listing all recordings but that takes a lot of time.
+                    earlier_start = starttime - timedelta(days=1)
+                    later_end = endtime + timedelta(days=1)
+                    recordings = server.ContentMgmt.search.getPastRecordingsForID(
+                        cid, earlier_start.isoformat() + "Z", later_end.isoformat() + "Z")
+                else:
+                    recordings = server.ContentMgmt.search.getPastRecordingsForID(
+                        cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
+
                 logging.info("Found %s recordings for channel %s" %
                              (recordings['CMSearchResult']['numOfMatches'], cid))
         except hikvisionapi.classes.HikvisionException as e:
             logging.error("Could not get recordings for channel %s" % cid)
             logging.error(e)
             continue
-
+        
         # This loops from every recording
         if recordings['CMSearchResult']['numOfMatches'] != "0":
             recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
@@ -267,48 +298,92 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> List[Re
         # In case there is only one recording, we need to make it a list
         if type(recordinglist) is not list:
             recordinglist = [recordinglist]
+        
+        # Prepare data structure for the channel
+        downloadDict[cid] = {
+            "num_videos": 0,
+            "filenames": [],
+            "duration": endtime - starttime,
+            "startTime": starttime.isoformat() + "Z",
+            "endTime": endtime.isoformat() + "Z",
+            "minStartTime": None,
+            "recordings": [],
+        }
+
         result = []
         for i in recordinglist:
-            result.append(Recording(
+
+            # Check if the recoding is in the required timespan
+            recording_startTime = datetime.strptime(
+                i['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
+            recording_endTime = datetime.strptime(
+                i['timeSpan']['endTime'], "%Y-%m-%dT%H:%M:%SZ")
+            if recording_endTime < args.starttime or recording_startTime > args.endtime:
+                continue
+            
+            rec = Recording(
                 cid=cid,
                 cname=cname,
                 url=i['mediaSegmentDescriptor']['playbackURI'],
-                startTime=i['timeSpan']['startTime']
-            ))
+                startTime=i['timeSpan']['startTime'],
+                endTime=i['timeSpan']['endTime'],
+            )
+            
+            result.append(rec)
+            downloadDict[cid]["num_videos"] += 1
             logging.debug("Found recording type %s on channel %s" % (
                 i['mediaSegmentDescriptor']['contentType'], cid
             ))
+
             if not args.photos and i['mediaSegmentDescriptor']['contentType'] != 'video':
                 # This recording is not a video, skip it
                 continue
-        downloadQueue.extend(result)
+        
+        # Save channel metadata
+        downloadDict[cid]["recordings"].extend(result)
+        downloadDict[cid]["minStartTime"] = downloadDict[cid]["recordings"][0].startTime
+        downloadDict["num_videos"] += downloadDict[cid]["num_videos"]
+        downloadDict["num_channels"] += 1
+
     end_time = time.perf_counter()
     run_time = end_time - start_time
     logging.info(
-        f"Found {len(downloadQueue)} files to download in {run_time:.2f} seconds")
-    return downloadQueue
+        f"Found {downloadDict['num_videos']} files to download in {run_time:.2f} seconds")
+    return downloadDict
 
 
 def search_for_recordings_mock(args) -> List[Recording]:
     logger = logging.getLogger('hikload')
     logger.debug(f"{args=}")
-    return [
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:48Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:49Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:50Z", url="https://tedyst.ro"),
-        Recording(cid=1, cname="Channel 1",
-                  startTime="2021-12-19T09:04:51Z", url="https://tedyst.ro"),
-    ]
+    return {
+        "num_videos": 5,
+        "Channel 1": {
+            "num_videos": 5,
+            "filenames": [],
+            "duration": timedelta(minutes=10),
+            "startTime": "2021-12-19T09:04:46Z",
+            "endTime": None,
+            "minStartTime": None,
+            "recordings": [
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:46Z", url="https://tedyst.ro"),
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:47Z", url="https://tedyst.ro"),
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:48Z", url="https://tedyst.ro"),
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:49Z", url="https://tedyst.ro"),
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:50Z", url="https://tedyst.ro"),
+                Recording(cid=1, cname="Channel 1",
+                        startTime="2021-12-19T09:04:51Z", url="https://tedyst.ro"),
+            ],
+        }
+    }
 
 
 def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj: Recording, original_path):
+    filename = None
     try:
         logger = logging.getLogger('hikload')
         if args.mock:
@@ -318,14 +393,19 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
         os.chdir(original_path)
         recording_time = datetime.strptime(
             recordingobj.startTime, "%Y-%m-%dT%H:%M:%SZ")
+        filepath = ""
         if args.folders:
             create_folder_and_chdir(recordingobj.cname)
+            filepath = os.path.join(filepath, recordingobj.cname)
             if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
                 create_folder_and_chdir(recording_time.year)
+                filepath = os.path.join(filepath, recording_time.year)
                 if args.folders in ["onepermonth", "oneperday"]:
                     create_folder_and_chdir(recording_time.month)
+                    filepath = os.path.join(filepath, recording_time.month)
                     if args.folders in ["oneperday"]:
                         create_folder_and_chdir(recording_time.day)
+                        filepath = os.path.join(filepath, recording_time.day)
 
         # You can choose your own filename, this is just an example
         if args.localtimefilenames:
@@ -335,6 +415,8 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
                 timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
             date = date + delta
             name = re.sub(r'[-T\:Z]', '', date.isoformat())
+        elif args.videoname != "":
+            name = args.videoname + "_" + re.sub(r'[-T\:Z]', '', recordingobj.startTime)
         else:
             name = re.sub(r'[-T\:Z]', '', recordingobj.startTime)
 
@@ -350,19 +432,73 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
 
         if args.folders:
             os.chdir(original_path)
+        
+        if args.folders:
+            filename = "%s.%s" % (name, args.videoformat)
+        else:
+            filename = "%s-%s.%s" % (name, recordingobj.cid, args.videoformat)
+        os.path.join(filepath, filename)
     except TypeError as e:
         logging.error(
             "HikVision dosen't apparently like to return correct XML data...")
         logging.error(repr(e))
         logging.error(recordingobj)
 
+    return filename
 
-def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadQueue: List[Recording]):
+
+def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadDict: dict):
     if args.downloads:
         create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
-    for recordingobj in tqdm.tqdm(downloadQueue):
-        download_recording(server, args, recordingobj, original_path)
+
+    print("Downloading recordings...")
+    with tqdm.tqdm(total=downloadDict["num_videos"]) as progress_bar:
+        for cid, channel_metadata in downloadDict.items():
+            try:
+                for recordingobj in channel_metadata["recordings"]:
+                    filename = download_recording(server, args, recordingobj, original_path)
+                    downloadDict[cid]["filenames"].append(filename)
+                    progress_bar.update()
+            except TypeError:
+                # Value (channel_metadata) is not subscriptible
+                pass
+    return downloadDict
+
+
+def process_recordings_with_ffmpeg(args, downloadDict: dict):
+    
+    # Check for max duration of the video and if it's too long, promt user
+    max_duration = timedelta(seconds=0)
+    for cid, channel_metadata in downloadDict.items():
+        if not isinstance(channel_metadata, dict):
+            continue
+        max_duration = max (max_duration, channel_metadata["duration"])
+    prompted = max_duration > timedelta(hours=10)
+    while prompted:
+        answer = input("You are about to concatenate {} of videos. This could result in creating huge amounts of data being created. Do you want to continue? Y[es] / N[o]".format(max_duration))
+        if answer.lower() in ["y","yes"]:
+            prompted = False
+        elif answer.lower() in ["n","no"]:
+            return
+        else:
+            print("Please, answer either Y[es] or N[o]")
+    
+    if args.downloads:
+        create_folder_and_chdir(args.downloads)
+  
+    print("Concatenating videos..")
+    with tqdm.tqdm(total=downloadDict["num_channels"]) as progress_bar:
+        for cid, channel_metadata in downloadDict.items():
+            if not isinstance(channel_metadata, dict):
+                continue
+
+            concat_filename = concat_channel_videos(channel_metadata, cid, args)
+
+            if args.trim:
+                cut_filename = cut_video(concat_filename, channel_metadata)
+            
+            progress_bar.update()
 
 
 def run(args):
@@ -390,8 +526,13 @@ def run(args):
     with logging_redirect_tqdm():
         server.test_connection()
         if args.mock:
-            downloadQueue = search_for_recordings_mock(args)
+            downloadDict = search_for_recordings_mock(args)
             args.skipdownload = True
         else:
-            downloadQueue = search_for_recordings(server, args)
-        download_recordings(server, args, downloadQueue)
+            downloadDict = search_for_recordings(server, args)
+
+        downloadDict = download_recordings(server, args, downloadDict)
+
+        if args.concat:
+            process_recordings_with_ffmpeg(args, downloadDict)       
+
