@@ -17,6 +17,11 @@ from hikload.hikvisionapi.classes import HikvisionException
 
 from hikload.video import concat_channel_videos, cut_video
 
+if sys.version_info < (3, 9):
+    # This is a workaround for Python 3.8 and below not having the BooleanOptionalAction
+    argparse.BooleanOptionalAction = "store_true"
+
+
 class Recording():
     def __init__(self, cid, cname, url, startTime, endTime=None):
         self.cid = cid
