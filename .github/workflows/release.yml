@@ -62,7 +62,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
+          python-version: "3.10"
           architecture: ${{ matrix.config.arch }}
       - name: Package the app using PyInstaller
         run: |
@@ -103,7 +103,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           pip install pip pipenv --upgrade
