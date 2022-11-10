@@ -27,12 +27,12 @@ jobs:
         uses: jurplel/install-qt-action@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           architecture: ${{ matrix.config.arch }}
 
       - name: Package the app using PyInstaller
         run: |
-          pip install pipenv
+          pip install pipenv --upgrade
           pipenv install --dev --deploy
           pipenv run pyinstaller hikload.spec
 
