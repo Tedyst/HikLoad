@@ -102,7 +102,7 @@ def parse_args():
                         help='enable concatenating downloaded vides into one file (channel-wise)')
     parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
                         help='enable triming of the concatenated video. Does work only with --concat enabled')
-    parser.add_argument('--httptimeout', dest="httptimeout",
+    parser.add_argument('--httptimeout', dest="httptimeout", type=int,
                         help='HTTP requests will time out after a given seconds of server inactivity while waiting for an answer')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
                         # If running under PyInstaller, use the UI
