@@ -102,6 +102,8 @@ def parse_args():
                         help='enable concatenating downloaded vides into one file (channel-wise)')
     parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
                         help='enable triming of the concatenated video. Does work only with --concat enabled')
+    parser.add_argument('--httptimeout', dest="httptimeout",
+                        help='HTTP requests will time out after a given seconds of server inactivity while waiting for an answer')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
                         # If running under PyInstaller, use the UI
                         default=bool(getattr(sys, 'frozen', False)),
@@ -515,7 +517,7 @@ def run(args):
             "No password specified! You need to specify a password with --password")
 
     server = hikvisionapi.HikvisionServer(
-        args.server, args.username, args.password)
+        args.server, args.username, args.password, httptimeout=args.httptimeout)
 
     FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(format=FORMAT)

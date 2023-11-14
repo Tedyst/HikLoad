@@ -4,8 +4,6 @@ from collections import OrderedDict
 from io import BytesIO
 from typing import Union
 import copy
-import os
-
 import requests
 from lxml import etree
 from requests.auth import HTTPDigestAuth
@@ -14,7 +12,7 @@ from xmler import dict2xml as d2xml
 logger = logging.getLogger('hikload')
 
 
-def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, rawResponse: bool = False) -> dict:
+def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, rawResponse: bool = False, httptimeout: int | None = None) -> dict:
     """This returns the response of the DVR to the following GET request
 
     Parameters:
@@ -32,7 +30,7 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     if tosend is not None:
         logger.debug("Data sent: %s" % tosend)
     if rawResponse:
-        return getXMLRaw(server, path, xmldata=tosend, rawResponse=True)
+        return getXMLRaw(server, path, xmldata=tosend, rawResponse=True, httptimeout=httptimeout)
     response = xml2dict(getXMLRaw(server, path, xmldata=tosend))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
@@ -46,7 +44,7 @@ def getXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     return response
 
 
-def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None, rawResponse: bool = False) -> dict:
+def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None, rawResponse: bool = False, httptimeout: int | None = None) -> dict:
     """
     This returns the response of the DVR to the following GET request
 
@@ -63,20 +61,22 @@ def getXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
         responseRaw = requests.get(
             "%s/%s" % (server.address(), path),
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     else:
         responseRaw = requests.get(
             "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     if rawResponse:
         return responseRaw
     responseXML = responseRaw.text
     return responseXML
 
 
-def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, httptimeout: int | None = None) -> dict:
     """This returns the response of the DVR to the following PUT request
 
     Parameters:
@@ -93,7 +93,7 @@ def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
         tosend = dict2xml(data)
     if tosend is not None:
         logger.debug("Data sent: %s" % tosend)
-    response = xml2dict(putXMLRaw(server, path, xmldata=tosend))
+    response = xml2dict(putXMLRaw(server, path, xmldata=tosend, httptimeout=httptimeout))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
@@ -106,7 +106,7 @@ def putXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, x
     return response
 
 
-def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
+def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None, httptimeout: int | None = None) -> dict:
     """
     This returns the response of the DVR to the following PUT request
 
@@ -122,18 +122,20 @@ def putXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = No
         responseRaw = requests.put(
             "%s/%s" % (server.address(), path),
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     else:
         responseRaw = requests.put(
             "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     responseXML = responseRaw.text
     return responseXML
 
 
-def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, httptimeout: int | None = None) -> dict:
     """This returns the response of the DVR to the following DELETE request
 
     Parameters:
@@ -150,7 +152,7 @@ def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None
         tosend = dict2xml(data)
     if tosend is not None:
         logger.debug("Data sent: %s" % tosend)
-    response = xml2dict(deleteXMLRaw(server, path, xmldata=tosend))
+    response = xml2dict(deleteXMLRaw(server, path, xmldata=tosend, httptimeout=httptimeout))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
@@ -163,7 +165,7 @@ def deleteXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None
     return response
 
 
-def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None) -> dict:
+def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None, httptimeout: int | None = None) -> dict:
     """
     This returns the response of the DVR to the following DELETE request
 
@@ -179,20 +181,22 @@ def deleteXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata=None) 
         responseRaw = requests.delete(
             "%s/%s" % (server.address(), path),
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     else:
         responseRaw = requests.delete(
             "%s/%s" % (server.address(), path),
             data=xmldata,
             headers=headers,
-            auth=HTTPDigestAuth(server.user, server.password))
+            auth=HTTPDigestAuth(server.user, server.password),
+            timeout=httptimeout)
     if responseRaw.status_code == 401:
         raise hikvisionapi.HikvisionException("Wrong username or password")
     responseXML = responseRaw.text
     return responseXML
 
 
-def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None) -> dict:
+def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, xmldata: str = None, httptimeout: int | None = None) -> dict:
     """This returns the response of the DVR to the following POST request
 
     Parameters:
@@ -209,7 +213,7 @@ def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, 
         tosend = dict2xml(data)
     if tosend is not None:
         logger.debug("Data sent: %s" % tosend)
-    response = xml2dict(postXMLRaw(server, path, xmldata=tosend))
+    response = xml2dict(postXMLRaw(server, path, xmldata=tosend, httptimeout=httptimeout))
     if 'ResponseStatus' in response:
         if 'statusCode' in response['ResponseStatus']:
             if response['ResponseStatus']['statusCode'] != '1':
@@ -222,7 +226,7 @@ def postXML(server: hikvisionapi.HikvisionServer, path: str, data: dict = None, 
     return response
 
 
-def postXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None) -> dict:
+def postXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = None, httptimeout: int | None = None) -> dict:
     """This returns the response of the DVR to the following POST request
 
     Parameters:
@@ -237,7 +241,8 @@ def postXMLRaw(server: hikvisionapi.HikvisionServer, path: str, xmldata: str = N
         "%s/%s" % (server.address(), path),
         data=xmldata,
         headers=headers,
-        auth=HTTPDigestAuth(server.user, server.password))
+        auth=HTTPDigestAuth(server.user, server.password),
+        timeout=httptimeout)
     responseXML = responseRaw.text
     return responseXML
 
