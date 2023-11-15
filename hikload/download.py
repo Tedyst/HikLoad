@@ -108,6 +108,8 @@ def parse_args():
                         # If running under PyInstaller, use the UI
                         default=bool(getattr(sys, 'frozen', False)),
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
+    parser.add_argument('--skipexisting', dest="skipexisting", action=argparse.BooleanOptionalAction,
+                        help='Skip dowloading files those already exist in the destination dir. Won\'t skip files that need preprocessing')
     args = parser.parse_args()
     return args
 
@@ -127,6 +129,9 @@ def create_folder_and_chdir(dir):
 def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
     start_time = time.perf_counter()
     name = "%s.jpeg" % filename
+    if args.skipexisting and os.path.exists(name) and os.path.getsize(name) > 0:
+        logging.debug(f"Skipping {name} as it already exists")
+        return
     logging.debug("Started downloading %s" % name)
     logging.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
@@ -173,6 +178,10 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             temporaryname = "%s.mp4" % filename
         else:
             temporaryname = "%s-%s.mp4" % (filename, cid)
+        
+        if args.skipexisting and os.path.exists(temporaryname) and os.path.getsize(temporaryname) > 0:
+            logging.debug(f"Skipping {temporaryname} as it already exists")
+            return
         try:
             r = server.ContentMgmt.search.downloadURI(url)
         except hikvisionapi.HikvisionError as e:
