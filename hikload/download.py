@@ -419,13 +419,13 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
             filepath = os.path.join(filepath, recordingobj.cname)
             if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
                 create_folder_and_chdir(recording_time.year)
-                filepath = os.path.join(filepath, recording_time.year)
+                filepath = os.path.join(filepath, str(recording_time.year))
                 if args.folders in ["onepermonth", "oneperday"]:
                     create_folder_and_chdir(recording_time.month)
-                    filepath = os.path.join(filepath, recording_time.month)
+                    filepath = os.path.join(filepath, str(recording_time.month))
                     if args.folders in ["oneperday"]:
                         create_folder_and_chdir(recording_time.day)
-                        filepath = os.path.join(filepath, recording_time.day)
+                        filepath = os.path.join(filepath, str(recording_time.day))
 
         # You can choose your own filename, this is just an example
         if args.localtimefilenames:
