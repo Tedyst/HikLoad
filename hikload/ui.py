@@ -106,7 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.move(frameGm.topLeft())
 
         server = HikvisionServer(
-            self.args.server, self.args.username, self.args.password)
+            self.args.server, self.args.username, self.args.password, httptimeout=args.httptimeout)
         self.downloadthread = downloadThread(self, server, args)
         self.downloadthread.start()
 
@@ -215,7 +215,7 @@ class Startup(QtWidgets.QDialog):
         if not self.args.mock:
             try:
                 server = HikvisionServer(self.ui.server_ip.text(
-                ), self.ui.username.text(), self.ui.password.text())
+                ), self.ui.username.text(), self.ui.password.text(), httptimeout=self.args.httptimeout)
                 server.test_connection()
                 channelList = server.Streaming.getChannels()
                 self.ui.cameras.clear()

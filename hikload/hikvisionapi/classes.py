@@ -19,14 +19,14 @@ class HikvisionServer:
                         Should be `http`(default) or `https`
     """
 
-    def __init__(self, host, user, password, protocol="http"):
+    def __init__(self, host, user, password, protocol="http", httptimeout: int | None = None):
         self.host = host
         self.protocol = protocol
         self.user = user
         self.password = password
-        self.System = _System(self)
-        self.Streaming = _Streaming(self)
-        self.ContentMgmt = _ContentMgmt(self)
+        self.System = _System(self, httptimeout)
+        self.Streaming = _Streaming(self, httptimeout)
+        self.ContentMgmt = _ContentMgmt(self, httptimeout)
 
     def __repr__(self) -> str:
         return "%s(host=%s, protocol=%s, user=%s)" % (self.__class__.__name__, self.host, self.protocol, self.user)
