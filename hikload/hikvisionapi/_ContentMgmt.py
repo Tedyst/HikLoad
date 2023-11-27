@@ -6,8 +6,9 @@ logger = logging.getLogger('hikload')
 
 
 class _search():
-    def __init__(self, parent):
+    def __init__(self, parent, httptimeout):
         self.parent = parent.parent
+        self.httptimeout = httptimeout
 
     def profile(self):
         """
@@ -16,15 +17,15 @@ class _search():
         request (see “/ISAPI/ContentMgmt/search”). Devices that support the ‘Full’ search profile must outline
         their parameter limits, as described in the following schema
         """
-        return hikvisionapi.getXML(self.parent, "ContentMgmt/search/profile")
+        return hikvisionapi.getXML(self.parent, "ContentMgmt/search/profile", httptimeout=self.httptimeout)
 
     def getRaw(self, data: dict):
-        return hikvisionapi.postXML(self.parent, "ContentMgmt/search", data=data)
+        return hikvisionapi.postXML(self.parent, "ContentMgmt/search", data=data, httptimeout=self.httptimeout)
 
     def get(self, data: dict):
         # TODO: This is a hack, since the server likes to return a limited number of results
         result = hikvisionapi.postXML(
-            self.parent, "ContentMgmt/search", data=data)
+            self.parent, "ContentMgmt/search", data=data, httptimeout=self.httptimeout)
         if result['CMSearchResult']['responseStatusStrg'] == "NO MATCHES":
             return result
         original = result
@@ -44,7 +45,7 @@ class _search():
                     ['timeSpan']['startTime']
                 )
                 result = hikvisionapi.postXML(
-                    self.parent, "ContentMgmt/search", data=data)
+                    self.parent, "ContentMgmt/search", data=data, httptimeout=self.httptimeout)
                 for i in result['CMSearchResult']['matchList']['searchMatchItem']:
                     original['CMSearchResult']['matchList']['searchMatchItem'].append(
                         i)
@@ -58,12 +59,12 @@ class _search():
 
     def download(self, data: dict):
         result = hikvisionapi.getXML(self.parent, "ContentMgmt/download",
-                                     data=data, rawResponse=True)
+                                     data=data, rawResponse=True, httptimeout=self.httptimeout)
         return result
 
     def get_download_capabilities(self):
         result = hikvisionapi.getXML(
-            self.parent, "ContentMgmt/download/capabilities")
+            self.parent, "ContentMgmt/download/capabilities", httptimeout=self.httptimeout)
         return result
 
     def downloadURI(self, playbackURI):
@@ -121,6 +122,6 @@ class _search():
 
 
 class _ContentMgmt():
-    def __init__(self, parent):
+    def __init__(self, parent, httptimeout=None):
         self.parent = parent
-        self.search = _search(self)
+        self.search = _search(self, httptimeout)

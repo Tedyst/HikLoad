@@ -15,11 +15,11 @@ If you want to use the new interface written in Qt, you can use the command `hik
 To use your own DVR it is usually only needed to change the arguments for the script. The first parameter is the IP, the second one is the username and the third is the password. Here are all of the possible parameters:
 
 ```
-usage: hikload [-h] [--server SERVER] [--username USERNAME] [--password PASSWORD] [--starttime STARTTIME] [--endtime ENDTIME]
-               [--folders {onepercamera,oneperday,onepermonth,oneperyear}] [--debug | --no-debug] [--videoformat {mkv,mp4,avi}] [--downloads DOWNLOADS] [--frames FRAMES]
-               [--force | --no-force] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS] [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings]
-               [--cameras CAMERAS] [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday] [--ffmpeg | --no-ffmpeg]
-               [--forcetranscoding | --no-forcetranscoding] [--photos | --no-photos] [--mock | --no-mock] [--ui | --no-ui]
+usage: main.py [-h] [--server SERVER] [--username USERNAME] [--password PASSWORD] [--starttime STARTTIME] [--endtime ENDTIME] [--folders {onepercamera,oneperday,onepermonth,oneperyear}]
+               [--debug | --no-debug] [--videoformat {mkv,mp4,avi}] [--downloads DOWNLOADS] [--frames FRAMES] [--force | --no-force] [--skipseconds SKIPSECONDS] [--seconds SECONDS] [--days DAYS]
+               [--skipdownload | --no-skipdownload] [--allrecordings | --no-allrecordings] [--cameras CAMERAS] [--localtimefilenames | --no-localtimefilenames] [--yesterday | --no-yesterday]
+               [--ffmpeg | --no-ffmpeg] [--forcetranscoding | --no-forcetranscoding] [--photos | --no-photos] [--mock | --no-mock] [--videoname VIDEONAME] [--concat | --no-concat] [--trim | --no-trim]
+               [--ui | --no-ui] [--skipexisting | --no-skipexisting]
 
 Download Recordings from a HikVision server, from a range interval
 
@@ -35,7 +35,7 @@ options:
                         create a separate folder per camera/duration (default: disabled)
   --debug, --no-debug   enable debug mode (default: false)
   --videoformat {mkv,mp4,avi}
-                        specify video format (default: mkv)
+                        specify video format (default: mp4)
   --downloads DOWNLOADS
                         the downloads folder (default: "Downloads")
   --frames FRAMES       save a frame for every X frames in the video (default: false)
@@ -60,7 +60,14 @@ options:
   --photos, --no-photos
                         enable experimental downloading of saved photos
   --mock, --no-mock     enable mock mode WARNING! This will not download anything from the server
+  --videoname VIDEONAME
+                        name of the downloaded video(s). Does not suppress --localtimefilenames
+  --concat, --no-concat
+                        enable concatenating downloaded vides into one file (channel-wise)
+  --trim, --no-trim     enable triming of the concatenated video. Does work only with --concat enabled
   --ui, --no-ui         enable UI interface WARNING! Requires Qt5 to be installed (default: False)
+  --skipexisting, --no-skipexisting
+                        Skip dowloading files those already exist in the destination dir. Won't skip files that need preprocessing
 ```
 
 The DVR/NVR needs to have ISAPI and RTSP enabled in System/Security and H264+ disabled for every camera.

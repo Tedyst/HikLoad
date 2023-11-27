@@ -102,10 +102,14 @@ def parse_args():
                         help='enable concatenating downloaded vides into one file (channel-wise)')
     parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
                         help='enable triming of the concatenated video. Does work only with --concat enabled')
+    parser.add_argument('--httptimeout', dest="httptimeout", type=int,
+                        help='HTTP requests will time out after a given seconds of server inactivity while waiting for an answer')
     parser.add_argument('--ui', dest="ui", action=argparse.BooleanOptionalAction,
                         # If running under PyInstaller, use the UI
                         default=bool(getattr(sys, 'frozen', False)),
                         help='enable UI interface WARNING! Requires Qt5 to be installed')
+    parser.add_argument('--skipexisting', dest="skipexisting", action=argparse.BooleanOptionalAction,
+                        help='Skip dowloading files those already exist in the destination dir. Won\'t skip files that need preprocessing')
     args = parser.parse_args()
     return args
 
@@ -125,6 +129,9 @@ def create_folder_and_chdir(dir):
 def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
     start_time = time.perf_counter()
     name = "%s.jpeg" % filename
+    if args.skipexisting and os.path.exists(name) and os.path.getsize(name) > 0:
+        logging.debug(f"Skipping {name} as it already exists")
+        return
     logging.debug("Started downloading %s" % name)
     logging.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
@@ -171,6 +178,10 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             temporaryname = "%s.mp4" % filename
         else:
             temporaryname = "%s-%s.mp4" % (filename, cid)
+        
+        if args.skipexisting and os.path.exists(temporaryname) and os.path.getsize(temporaryname) > 0:
+            logging.debug(f"Skipping {temporaryname} as it already exists")
+            return
         try:
             r = server.ContentMgmt.search.downloadURI(url)
         except hikvisionapi.HikvisionError as e:
@@ -408,13 +419,13 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
             filepath = os.path.join(filepath, recordingobj.cname)
             if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
                 create_folder_and_chdir(recording_time.year)
-                filepath = os.path.join(filepath, recording_time.year)
+                filepath = os.path.join(filepath, str(recording_time.year))
                 if args.folders in ["onepermonth", "oneperday"]:
                     create_folder_and_chdir(recording_time.month)
-                    filepath = os.path.join(filepath, recording_time.month)
+                    filepath = os.path.join(filepath, str(recording_time.month))
                     if args.folders in ["oneperday"]:
                         create_folder_and_chdir(recording_time.day)
-                        filepath = os.path.join(filepath, recording_time.day)
+                        filepath = os.path.join(filepath, str(recording_time.day))
 
         # You can choose your own filename, this is just an example
         if args.localtimefilenames:
@@ -515,7 +526,7 @@ def run(args):
             "No password specified! You need to specify a password with --password")
 
     server = hikvisionapi.HikvisionServer(
-        args.server, args.username, args.password)
+        args.server, args.username, args.password, httptimeout=args.httptimeout)
 
     FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(format=FORMAT)
