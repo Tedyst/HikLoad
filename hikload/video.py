@@ -67,7 +67,7 @@ def concat_channel_videos(channel_metadata: dict, cid, args):
         except FileNotFoundError:
             pass
 
-    logging.debug("Recordings of the channel {} concatenated into video {}".format(cid, outname))
+    logger.debug("Recordings of the channel {} concatenated into video {}".format(cid, outname))
     return outname
 
 
@@ -105,5 +105,5 @@ def cut_video(video_name, channel_metadata: dict):
     except FileNotFoundError:
         pass
 
-    logging.debug("Video {} trimed into video {}".format(video_name, outname))
+    logger.debug("Video {} trimed into video {}".format(video_name, outname))
     return outname

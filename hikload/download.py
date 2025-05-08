@@ -4,8 +4,6 @@ import os
 import re
 import time
 from datetime import datetime, timedelta, timezone
-from typing import List
-from io import StringIO
 import sys
 
 import ffmpeg
@@ -16,6 +14,10 @@ import hikload.hikvisionapi as hikvisionapi
 from hikload.hikvisionapi.classes import HikvisionException
 
 from hikload.video import concat_channel_videos, cut_video
+
+FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('hikload')
 
 if sys.version_info < (3, 9):
     # This is a workaround for Python 3.8 and below not having the BooleanOptionalAction
@@ -60,8 +62,10 @@ def parse_args():
                         default=datetime.now().replace(
                             hour=23, minute=59, second=59, microsecond=0).isoformat(),
                         help='the start time in ISO format (default: today at 23:59:59, local time)')
-    parser.add_argument('--folders', type=str, dest="folders", choices=['onepercamera', 'oneperday', 'onepermonth', 'oneperyear'],
+    parser.add_argument('--folders', type=str, dest="folders", choices=['onepercamera', 'oneperday', 'onepermonth', 'oneperyear', 'oneperhour'],
                         help='create a separate folder per camera/duration (default: disabled)')
+    parser.add_argument('--filenameseparator', type=str, dest="filenameseparator", default="",
+                        help='separator character to be used between the time components in file names, e.g. "_" will result in 2025_03_05_15_11_09.jpeg')
     parser.add_argument('--debug', action=argparse.BooleanOptionalAction, dest="debug",
                         help='enable debug mode (default: false)')
     parser.add_argument('--videoformat', dest="videoformat", default="mp4", choices=['mkv', 'mp4', 'avi'],
@@ -99,7 +103,7 @@ def parse_args():
     parser.add_argument('--videoname', dest="videoname", type=str, default="",
                         help='name of the downloaded video(s). Does not suppress --localtimefilenames')
     parser.add_argument('--concat', dest="concat", action=argparse.BooleanOptionalAction,
-                        help='enable concatenating downloaded vides into one file (channel-wise)')
+                        help='enable concatenating downloaded videos into one file (channel-wise)')
     parser.add_argument('--trim', dest="trim", action=argparse.BooleanOptionalAction,
                         help='enable triming of the concatenated video. Does work only with --concat enabled')
     parser.add_argument('--httptimeout', dest="httptimeout", type=int,
@@ -118,9 +122,9 @@ def create_folder_and_chdir(dir):
     path = str(dir)
     if not os.path.exists(path):
         os.makedirs(os.path.normpath(path))
-        logging.debug("Created folder %s" % path)
+        logger.debug("Created folder %s" % path)
     else:
-        logging.debug("Folder %s already exists" % path)
+        logger.debug("Folder %s already exists" % path)
     if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
         os.chmod(os.path.normpath(path), 0o777)
     os.chdir(os.path.normpath(path))
@@ -128,12 +132,12 @@ def create_folder_and_chdir(dir):
 
 def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
     start_time = time.perf_counter()
-    name = "%s.jpeg" % filename
+    name = f"{filename}.jpeg"
     if args.skipexisting and os.path.exists(name) and os.path.getsize(name) > 0:
-        logging.debug(f"Skipping {name} as it already exists")
+        logger.debug(f"Skipping {name} as it already exists")
         return
-    logging.debug("Started downloading %s" % name)
-    logging.debug(
+    logger.debug("Started downloading %s" % name)
+    logger.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
     r = server.ContentMgmt.search.downloadURI(url)
     open(name, 'wb').write(r.content)
@@ -141,7 +145,7 @@ def photo_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
         os.chmod(name, 0o777)
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    logging.info(f"Finished downloading {name} in {run_time:.2f} seconds")
+    logger.info(f"Finished downloading {name} in {run_time:.2f} seconds")
 
 
 def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url, filename, cid):
@@ -150,8 +154,8 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
         name = "%s.%s" % (filename, args.videoformat)
     else:
         name = "%s-%s.%s" % (filename, cid, args.videoformat)
-    logging.debug("Started downloading %s" % name)
-    logging.debug(
+    logger.debug("Started downloading %s" % name)
+    logger.debug(
         "Files to download: (url: %r, name: %r)" % (url, name))
     if args.frames:
         try:
@@ -160,9 +164,9 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             hikvisionapi.downloadRTSPOnlyFrames(
                 url, name, debug=args.debug, force=args.force, modulo=args.frames, skipSeconds=args.skipseconds, seconds=args.seconds)
         except ffmpeg.Error as e:
-            logging.error(
+            logger.error(
                 "Could not download %s. Try to remove --frames." % name)
-            logging.error(e)
+            logger.error(e)
     if args.ffmpeg:
         try:
             url = url.replace(server.host, server.address(
@@ -170,64 +174,64 @@ def video_download_from_channel(server: hikvisionapi.HikvisionServer, args, url,
             hikvisionapi.downloadRTSP(
                 url, name, debug=args.debug, force=args.force, skipSeconds=args.skipseconds, seconds=args.seconds)
         except ffmpeg.Error as e:
-            logging.error(
+            logger.error(
                 "Could not download %s. Try to remove --fmpeg." % name)
-            logging.error(e)
+            logger.error(e)
     else:
         if args.folders:
             temporaryname = "%s.mp4" % filename
         else:
             temporaryname = "%s-%s.mp4" % (filename, cid)
-        
+
         if args.skipexisting and os.path.exists(temporaryname) and os.path.getsize(temporaryname) > 0:
-            logging.debug(f"Skipping {temporaryname} as it already exists")
+            logger.debug(f"Skipping {temporaryname} as it already exists")
             return
         try:
             r = server.ContentMgmt.search.downloadURI(url)
         except hikvisionapi.HikvisionError as e:
             try:
                 supports = server.ContentMgmt.search.get_download_capabilities()
-                logging.debug(f'Device capabilities: {supports}')
+                logger.debug(f'Device capabilities: {supports}')
                 if supports['DownloadAbility']['isSupportDownloadbyFileName'] == 'false':
-                    logging.error(
+                    logger.error(
                         "Downloading by file name is not supported for this device.")
-                    logging.error(
+                    logger.error(
                         "Try to add --ffmpeg to force recording the videos.")
-                    logging.error(e)
+                    logger.error(e)
                     return
                 if supports['DownloadAbility']['isSupportDownloadbyTime'] == 'false':
-                    logging.error(
+                    logger.error(
                         "Downloading by time is not supported for this device.")
-                    logging.error(
+                    logger.error(
                         "Try to add --ffmpeg to force recording the videos.")
-                    logging.error(e)
+                    logger.error(e)
                     return
             except (hikvisionapi.HikvisionError, TypeError) as e:
-                logging.error(
+                logger.error(
                     "Could not get download capabilities. The device dosen't seem to support getting capabilities.")
-                logging.error(
+                logger.error(
                     "Try to add --ffmpeg to force recording the videos.")
-                logging.error(e)
+                logger.error(e)
                 return
-            logging.error(
+            logger.error(
                 "Could not download %s. Try to add --ffmpeg." % name)
-            logging.error(e)
+            logger.error(e)
             return
         open(temporaryname, 'wb').write(r.content)
         try:
-            logging.info(args)
+            logger.info(args)
             hikvisionapi.processSavedVideo(
                 temporaryname, debug=args.debug, skipSeconds=args.skipseconds, seconds=args.seconds,
                 fileFormat=args.videoformat, forceTranscode=args.forcetranscoding)
         except ffmpeg.Error as e:
-            logging.error(
+            logger.error(
                 "Could not transcode %s. Try to remove --forcetranscoding." % name)
-            logging.error(e)
+            logger.error(e)
     if os.environ.get('RUNNING_IN_DOCKER') == 'TRUE':
         os.chmod(name, 0o777)
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    logging.info(f"Finished downloading {name} in {run_time:.2f} seconds")
+    logger.info(f"Finished downloading {name} in {run_time:.2f} seconds")
 
 
 def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
@@ -251,9 +255,9 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
                         channel['id'] = str(int(channel['id'])+2)
                     channelids.append(channel['id'])
                     channels.append(channel)
-                logging.info("Found channels %s" % channelids)
+                logger.info("Found channels %s" % channelids)
         except HikvisionException as e:
-            logging.error(
+            logger.error(
                 "Could not get channel list. If you still want to continue, add the argument --cameras with the channel ids you want to download.")
             raise e
 
@@ -277,17 +281,17 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
             starttime = args.starttime
             endtime = args.endtime
 
-        logging.debug("Using %s and %s as start and end times" %
+        logger.debug("Using %s and %s as start and end times" %
                       (starttime.isoformat() + "Z", endtime.isoformat() + "Z"))
 
         try:
             if args.allrecordings:
                 recordings = server.ContentMgmt.search.getAllRecordingsForID(
                     cid)
-                logging.info("There are %s recordings in total for channel %s" %
+                logger.info("There are %s recordings in total for channel %s" %
                              (recordings['CMSearchResult']['numOfMatches'], cid))
             else:
-               
+
                 if args.concat:
                     # List recordings around given time to estimate true duration
                     # Would break if one recording is longer than a day. Could be solved
@@ -300,13 +304,13 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
                     recordings = server.ContentMgmt.search.getPastRecordingsForID(
                         cid, starttime.isoformat() + "Z", endtime.isoformat() + "Z")
 
-                logging.info("Found %s recordings for channel %s" %
+                logger.info("Found %s recordings for channel %s" %
                              (recordings['CMSearchResult']['numOfMatches'], cid))
         except hikvisionapi.classes.HikvisionException as e:
-            logging.error("Could not get recordings for channel %s" % cid)
-            logging.error(e)
+            logger.error("Could not get recordings for channel %s" % cid)
+            logger.error(e)
             continue
-        
+
         # This loops from every recording
         if recordings['CMSearchResult']['numOfMatches'] != "0":
             recordinglist = recordings['CMSearchResult']['matchList']['searchMatchItem']
@@ -315,7 +319,7 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
         # In case there is only one recording, we need to make it a list
         if type(recordinglist) is not list:
             recordinglist = [recordinglist]
-        
+
         # Prepare data structure for the channel
         downloadDict["channels"][cid] = {
             "num_videos": 0,
@@ -337,7 +341,7 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
                 i['timeSpan']['endTime'], "%Y-%m-%dT%H:%M:%SZ")
             if recording_endTime < args.starttime or recording_startTime > args.endtime:
                 continue
-            
+
             rec = Recording(
                 cid=cid,
                 cname=cname,
@@ -345,10 +349,10 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
                 startTime=i['timeSpan']['startTime'],
                 endTime=i['timeSpan']['endTime'],
             )
-            
+
             result.append(rec)
             downloadDict["channels"][cid]["num_videos"] += 1
-            logging.debug("Found recording type %s on channel %s" % (
+            logger.debug("Found recording type %s on channel %s" % (
                 i['mediaSegmentDescriptor']['contentType'], cid
             ))
 
@@ -365,13 +369,12 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
 
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    logging.info(
+    logger.info(
         f"Found {downloadDict['num_videos']} files to download in {run_time:.2f} seconds")
     return downloadDict
 
 
 def search_for_recordings_mock(args) -> dict:
-    logger = logging.getLogger('hikload')
     logger.debug(f"{args=}")
     return {
         "num_videos": 5,
@@ -405,7 +408,6 @@ def search_for_recordings_mock(args) -> dict:
 def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj: Recording, original_path):
     filename = None
     try:
-        logger = logging.getLogger('hikload')
         if args.mock:
             logger.info("Mocking download of %s" % recordingobj.url)
             time.sleep(1)
@@ -417,15 +419,21 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
         if args.folders:
             create_folder_and_chdir(recordingobj.cname)
             filepath = os.path.join(filepath, recordingobj.cname)
-            if args.folders in ["oneperyear", "onepermonth", "oneperday"]:
+            if args.folders in ["oneperyear", "onepermonth", "oneperday", "oneperhour"]:
                 create_folder_and_chdir(recording_time.year)
                 filepath = os.path.join(filepath, str(recording_time.year))
-                if args.folders in ["onepermonth", "oneperday"]:
-                    create_folder_and_chdir(recording_time.month)
-                    filepath = os.path.join(filepath, str(recording_time.month))
-                    if args.folders in ["oneperday"]:
-                        create_folder_and_chdir(recording_time.day)
-                        filepath = os.path.join(filepath, str(recording_time.day))
+                if args.folders in ["onepermonth", "oneperday", "oneperhour"]:
+                    month_folder = f"{recording_time.month:02d}"
+                    create_folder_and_chdir(month_folder)
+                    filepath = os.path.join(filepath, month_folder)
+                    if args.folders in ["oneperday", "oneperhour"]:
+                        day_folder = f"{recording_time.day:02d}"
+                        create_folder_and_chdir(day_folder)
+                        filepath = os.path.join(filepath, day_folder)
+                        if args.folders in ["oneperhour"]:
+                            hour_folder = f"{recording_time.hour:02d}"
+                            create_folder_and_chdir(hour_folder)
+                            filepath = os.path.join(filepath, hour_folder)
 
         # You can choose your own filename, this is just an example
         if args.localtimefilenames:
@@ -434,11 +442,12 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
             delta = datetime.now(
                 timezone.utc).astimezone().tzinfo.utcoffset(datetime.now(timezone.utc).astimezone())
             date = date + delta
-            name = re.sub(r'[-T\:Z]', '', date.isoformat())
+            name = re.sub(r'[-T\:Z]', args.filenameseparator, date.isoformat()).strip(args.filenameseparator)
         elif args.videoname != "":
-            name = args.videoname + "_" + re.sub(r'[-T\:Z]', '', recordingobj.startTime)
+            name = args.videoname + "_" + re.sub(r'[-T\:Z]', args.filenameseparator, recordingobj.startTime).strip(args.filenameseparator)
         else:
-            name = re.sub(r'[-T\:Z]', '', recordingobj.startTime)
+            logger.info(recordingobj.startTime)
+            name = re.sub(r'[-T\:Z]', args.filenameseparator, recordingobj.startTime).strip(args.filenameseparator)
 
         if not args.skipdownload:
             if args.photos:
@@ -448,27 +457,26 @@ def download_recording(server: hikvisionapi.HikvisionServer, args, recordingobj:
                 video_download_from_channel(
                     server, args, recordingobj.url, name, recordingobj.cid)
         else:
-            logging.debug("Skipping download of %s" % recordingobj.url)
+            logger.debug("Skipping download of %s" % recordingobj.url)
 
         if args.folders:
             os.chdir(original_path)
-        
+
         if args.folders:
             filename = "%s.%s" % (name, args.videoformat)
         else:
             filename = "%s-%s.%s" % (name, recordingobj.cid, args.videoformat)
         os.path.join(filepath, filename)
     except TypeError as e:
-        logging.error(
-            "HikVision dosen't apparently like to return correct XML data...")
-        logging.error(repr(e))
-        logging.error(recordingobj)
+        logger.error(
+            "HikVision doesn't apparently like to return correct XML data...")
+        logger.error(repr(e))
+        logger.error(recordingobj)
 
     return filename
 
 
 def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadDict: dict):
-    logger = logging.getLogger('hikload')
     if args.downloads:
         create_folder_and_chdir(args.downloads)
     original_path = os.path.abspath(os.getcwd())
@@ -488,7 +496,6 @@ def download_recordings(server: hikvisionapi.HikvisionServer, args, downloadDict
 
 
 def process_recordings_with_ffmpeg(args, downloadDict: dict):
-    logger = logging.getLogger('hikload')
     # Check for max duration of the video and if it's too long, promt user
     max_duration = timedelta(seconds=0)
     for cid, channel_metadata in downloadDict["channels"].items():
@@ -528,13 +535,8 @@ def run(args):
     server = hikvisionapi.HikvisionServer(
         args.server, args.username, args.password, httptimeout=args.httptimeout)
 
-    FORMAT = "[%(name)s - %(funcName)20s() ] %(message)s"
-    logging.basicConfig(format=FORMAT)
-    logger = logging.getLogger('hikload')
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    loglevel = logging.DEBUG if args.debug else logging.INFO
+    logger.setLevel(loglevel)
 
     with logging_redirect_tqdm():
         server.test_connection()
@@ -547,5 +549,5 @@ def run(args):
         downloadDict = download_recordings(server, args, downloadDict)
 
         if args.concat:
-            process_recordings_with_ffmpeg(args, downloadDict)       
+            process_recordings_with_ffmpeg(args, downloadDict)
 
