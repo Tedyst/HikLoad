@@ -87,6 +87,12 @@ pip install hikload
 hikload -h
 ```
 
+The UI needs PyQt5, which is an optional extra:
+```bash
+pip install "hikload[ui]"
+hikload-qt
+```
+
 To run the script from source, you can use this command from the root directory of the project:
 ```bash
 python setup.py install
