@@ -255,7 +255,8 @@ def xml2dict(xml: Union[str, dict]) -> dict:
 
     Returns:
         dictionary (dict): The resulting dictionary
-                           This has `@attrs` in place of the attributes
+                           This has `@attrs` in place of the attributes.
+                           A plain dict without `@attrs` works too.
     """
     # Taken from https://stackoverflow.com/questions/4255277/
     xslt = b"""<xsl:stylesheet version="1.0"
@@ -328,7 +329,8 @@ def dict2xml(dictionary: dict) -> str:
 
     Parameters:
         dictionary (dict): The resulting dictionary
-                           This has `@attrs` in place of the attributes
+                           This has `@attrs` in place of the attributes.
+                           A plain dict without `@attrs` works too.
 
     Returns:
         xml (string): The XML string
@@ -336,7 +338,7 @@ def dict2xml(dictionary: dict) -> str:
     # Keep the original dictionary intact, in case it needs to be modified
     temp = copy.deepcopy(dictionary)
     for i in temp:
-        temp[i]["@attrs"].update(
+        temp[i].setdefault("@attrs", {}).update(
             {"xmlns": "http://www.hikvision.com/ver20/XMLSchema"})
     xml = d2xml(temp)
     return """<?xml version = "1.0" encoding = "UTF-8" ?>""" + str(xml)
