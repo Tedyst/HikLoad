@@ -93,9 +93,9 @@ pip install "hikload[ui]"
 hikload-qt
 ```
 
-To run the script from source, you can use this command from the root directory of the project:
+To run the script from source, you can install it from the root directory of the project:
 ```bash
-python setup.py install
+uv tool install ".[ui]"
 hikload -h
 ```
 After this command, you will have installed `hikload` and `hikload-qt` in your PATH.
@@ -120,16 +120,10 @@ hikload --server 192.168.10.239 --user username --password password --cameras=20
 
 ## Installing Dependencies
 
-Due to [common problems](https://github.com/kkroening/ffmpeg-python/issues/174#issuecomment-561546739) found while installing the dependencies needed by this project, it is recommended to use a python virtualenv. Here is how to setup one:
+Due to [common problems](https://github.com/kkroening/ffmpeg-python/issues/174#issuecomment-561546739) found while installing the dependencies needed by this project, it is recommended to use a virtual environment managed by [uv](https://docs.astral.sh/uv/). Here is how to set up and run from source:
 
 ```bash
-pip install pipenv
-pipenv install --dev
-pipenv shell
-```
-
-And everytime you restart the terminal and want to use the virtualenv, you need to run these commands:
-
-```bash
-pipenv shell
+uv sync --extra ui
+uv run hikload -h
+uv run hikload-qt
 ```

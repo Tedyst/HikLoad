@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.33.0,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hikload"
+version = "1.1.4"
+description = "Download videos from a HikVision DVR/NVR"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Stoica Tedy", email = "stoicatedy@gmail.com" },
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "ffmpeg-python>=0.2.0,<0.3",
+    "lxml>=6.1.3,<7",
+    "requests>=2.34.2,<3",
+    "tqdm>=4.70.1,<5",
+    "xmler>=0.2.0,<0.3",
+]
+
+[project.optional-dependencies]
+ui = [
+    "pyqt5>=5.15.11,<6",
+    "pyqt5-qt5>=5.15.19,<5.16; sys_platform != 'win32'",
+    "pyqt5-qt5==5.15.2; sys_platform == 'win32'",
+]
+
+[project.urls]
+Homepage = "https://github.com/Tedyst/HikLoad"
+Repository = "https://github.com/Tedyst/HikLoad"
+
+[project.scripts]
+hikload = "hikload.__main__:main"
+hikload-qt = "hikload.__main__:main_ui"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.22.3,<7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["hikload"]

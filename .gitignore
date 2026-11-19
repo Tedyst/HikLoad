@@ -7,3 +7,4 @@ hikload.egg-info
 build
 *url.txt
 venv
+.venv

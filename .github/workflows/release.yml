@@ -46,15 +46,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
         with:
-          python-version: "3.10"
-          architecture: ${{ matrix.config.arch }}
+          version: "0.13.9"
+          python-version: "3.14"
       - name: Package the app using PyInstaller
         run: |
-          pip install pip pipenv --upgrade
-          pipenv install --dev --deploy
-          pipenv run pyinstaller hikload.spec
+          uv sync --locked --extra ui
+          uv run --no-sync pyinstaller hikload.spec
 
       - uses: actions/upload-artifact@v7
         with:
@@ -77,28 +77,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
         with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          pip install pip build --upgrade
+          version: "0.13.9"
+          python-version: "3.14"
 
-      - name: Update version in setup.py
+      - name: Update version in pyproject.toml
         env:
           NEW_VERSION: ${{ needs.releasetag.outputs.version }}
         run: |
-          python -c "import os, pathlib, re; p = pathlib.Path('setup.py'); p.write_text(re.sub(r'version=\"[^\"]+\"', f'version=\"{os.environ[\"NEW_VERSION\"]}\"', p.read_text(), count=1))"
+          uv run --no-project python -c "import os, pathlib, re; p = pathlib.Path('pyproject.toml'); p.write_text(re.sub(r'^version = \"[^\"]+\"', f'version = \"{os.environ[\"NEW_VERSION\"]}\"', p.read_text(), count=1, flags=re.MULTILINE))"
+          uv lock
 
       - uses: EndBug/add-and-commit@v11
         with:
-          add: setup.py
+          add: pyproject.toml uv.lock
           default_author: github_actions
-          message: "ci: increment version in setup.py"
+          message: "ci: increment version in pyproject.toml"
 
       - name: Build package
-        run: python -m build
+        run: uv build
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
