@@ -10,10 +10,15 @@ jobs:
   releasetag:
     runs-on: ubuntu-latest
     if: "contains(github.event.head_commit.message, '[RELEASE]') || contains(github.event_name, 'workflow')"
+    outputs:
+      version: ${{ steps.semantic.outputs.new_release_version }}
+      tag: ${{ steps.semantic.outputs.new_release_git_tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Generate Semantic Release Version
-        uses: cycjimmy/semantic-release-action@v2
+        uses: cycjimmy/semantic-release-action@v8
         id: semantic
         with:
           extra_plugins: |
@@ -22,33 +27,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create GitHub release
-        id: release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          tag_name: ${{ steps.semantic.outputs.new_release_git_tag }}
           prerelease: false
-          automatic_release_tag: ${{ steps.semantic.outputs.new_release_version }}
-      - shell: bash
-        run: |
-          echo "${{ steps.release.outputs.upload_url }}" > url.txt
-      - name: Upload upload_url
-        uses: actions/upload-artifact@v1
-        with:
-          name: upload_url
-          path: url.txt
-
-      - shell: bash
-        run: |
-          echo "${{ steps.semantic.outputs.new_release_version }}" > release.txt
-      - name: Upload release_version
-        uses: actions/upload-artifact@v1
-        with:
-          name: release_version
-          path: release.txt
 
   pyinstaller:
     runs-on: ${{ matrix.config.os }}
     needs: [releasetag]
+    if: needs.releasetag.outputs.version != ''
     name: Package the application using PyInstaller
     strategy:
       matrix:
@@ -57,10 +45,8 @@ jobs:
           - { os: windows-latest, arch: x64, name: windows, extension: ".exe" }
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.10"
           architecture: ${{ matrix.config.arch }}
@@ -70,79 +56,51 @@ jobs:
           pipenv install --dev --deploy
           pipenv run pyinstaller hikload.spec
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
           path: dist/hikload${{ matrix.config.extension }}
 
-      - name: Download upload_url
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-      - id: releaseurl
-        run: |
-          echo "::set-output name=url::$(cat upload_url/url.txt)"
       - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.releaseurl.outputs.url }}
-          asset_path: dist/hikload${{ matrix.config.extension }}
-          asset_name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp "dist/hikload${{ matrix.config.extension }}" "dist/hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}"
+          gh release upload "${{ needs.releasetag.outputs.tag }}" "dist/hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}${{ matrix.config.extension }}" --clobber
 
   pypipublish:
     runs-on: ubuntu-latest
     needs: [releasetag]
+    if: needs.releasetag.outputs.version != ''
     name: Package the application and publish it to PyPi
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v7
         with:
           python-version: "3.10"
       - name: Install dependencies
         run: |
-          pip install pip pipenv --upgrade
-          pip install build pipenv-setup
+          pip install pip build --upgrade
 
-      - name: Download upload_url
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-
-      - name: Download release
-        uses: actions/download-artifact@v1
-        with:
-          name: release_version
-      - id: version
+      - name: Update version in setup.py
+        env:
+          NEW_VERSION: ${{ needs.releasetag.outputs.version }}
         run: |
-          echo "::set-output name=VERSION::$(cat release_version/release.txt)"
+          python -c "import os, pathlib, re; p = pathlib.Path('setup.py'); p.write_text(re.sub(r'version=\"[^\"]+\"', f'version=\"{os.environ[\"NEW_VERSION\"]}\"', p.read_text(), count=1))"
 
-      - name: Find the old version and replace it with the newly released one
-        uses: jacobtomlinson/gha-find-replace@v2
+      - uses: EndBug/add-and-commit@v11
         with:
-          find: "\\d\\.\\d\\.\\d"
-          replace: ${{ steps.version.outputs.VERSION }}
-          include: "setup.py"
-          regex: true
-
-      - name: Sync dependencies from Pipfile to setup.py
-        run: |
-          pipenv-setup sync
-
-      - uses: EndBug/add-and-commit@v8
-        with:
+          add: setup.py
           default_author: github_actions
           message: "ci: increment version in setup.py"
 
       - name: Build package
         run: python -m build
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
@@ -150,46 +108,31 @@ jobs:
   dockerpublish:
     runs-on: ubuntu-latest
     needs: [releasetag]
+    if: needs.releasetag.outputs.version != ''
     name: Package the application and publish it to Github Packages
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+        uses: docker/setup-buildx-action@v4
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: tedyst
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Download release
-        uses: actions/download-artifact@v1
-        with:
-          name: release_version
-      - id: version
-        run: |
-          echo "::set-output name=VERSION::$(cat release_version/release.txt)"
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/tedyst/hikload:${{ steps.version.outputs.VERSION }}
+            ghcr.io/tedyst/hikload:${{ needs.releasetag.outputs.version }}
             ghcr.io/tedyst/hikload:latest
           cache-from: type=gha
           cache-to: type=gha

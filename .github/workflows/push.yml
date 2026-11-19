@@ -22,10 +22,8 @@ jobs:
             }
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.10"
           architecture: ${{ matrix.config.arch }}
@@ -36,7 +34,7 @@ jobs:
           pipenv install --dev --deploy
           pipenv run pyinstaller hikload.spec
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: hikload-${{ matrix.config.name }}-${{ matrix.config.arch }}
           path: dist/${{ matrix.config.filename }}
