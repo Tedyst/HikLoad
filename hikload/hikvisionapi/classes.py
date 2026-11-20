@@ -1,3 +1,5 @@
+from urllib.parse import quote, urlparse
+
 from hikload.hikvisionapi._System import _System
 from hikload.hikvisionapi._Streaming import _Streaming
 from hikload.hikvisionapi._ContentMgmt import _ContentMgmt
@@ -20,6 +22,14 @@ class HikvisionServer:
     """
 
     def __init__(self, host, user, password, protocol="http", httptimeout: int | None = None):
+        if isinstance(host, str):
+            host = host.strip()
+            if host.startswith(("http://", "https://")):
+                parsed = urlparse(host)
+                protocol = parsed.scheme
+                host = parsed.netloc
+            else:
+                host = host.rstrip("/")
         self.host = host
         self.protocol = protocol
         self.user = user
@@ -55,7 +65,10 @@ class HikvisionServer:
         if protocol:
             string += self.protocol + "://"
         if credentials:
-            string += "%s:%s@" % (self.user, self.password)
+            string += "%s:%s@" % (
+                quote(str(self.user), safe=""),
+                quote(str(self.password), safe=""),
+            )
         string += self.host + "/ISAPI"
         return string
 

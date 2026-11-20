@@ -327,6 +327,17 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
             "recordings": [],
         }
 
+        cmp_start = (
+            starttime.astimezone(timezone.utc).replace(tzinfo=None)
+            if starttime.tzinfo is not None
+            else starttime
+        )
+        cmp_end = (
+            endtime.astimezone(timezone.utc).replace(tzinfo=None)
+            if endtime.tzinfo is not None
+            else endtime
+        )
+
         result = []
         for i in recordinglist:
 
@@ -335,7 +346,7 @@ def search_for_recordings(server: hikvisionapi.HikvisionServer, args) -> dict:
                 i['timeSpan']['startTime'], "%Y-%m-%dT%H:%M:%SZ")
             recording_endTime = datetime.strptime(
                 i['timeSpan']['endTime'], "%Y-%m-%dT%H:%M:%SZ")
-            if recording_endTime < args.starttime or recording_startTime > args.endtime:
+            if recording_endTime < cmp_start or recording_startTime > cmp_end:
                 continue
             
             rec = Recording(
